@@ -10,4 +10,5 @@
 !vcpkg.json
 !CMakePresets.json
 !Doxyfile
+!LICENSE
 docs/doxygen
