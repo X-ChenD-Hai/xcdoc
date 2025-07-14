@@ -1,10 +1,13 @@
 // re2c --lang c++
 #include <assert.h>
 
+#include <stack>
+
 #include "PreCompiledLexer.h"
 #include "utils.h"
+
 PreCompiledLexer::PreCompiledLexer(const std::string &path)
-    : path(path), content(utiles::read_file(path)) {
+    : path(path), content(utiles::read_file(path) + L"\n") {
     parse();
 }
 void PreCompiledLexer::parse() {
@@ -21,8 +24,11 @@ void PreCompiledLexer::parse() {
     bool in_string = false;
     bool in_translation_unit = false;
     bool in_name_force_string = false;
+    bool in_condition_line = false;
+    bool in_condition_endif_line = false;
+    std::stack<ConditonBlock> condition_block_stack;
     size_t line = 1;
-#ifdef __debug__
+#ifdef __xcdoc_debug__
     auto show_state = [&](const std::string &msg) {
         ERR VV(msg) ENDL;
         WERR NV(*(YYCURSOR - 1)) ENDL;
@@ -34,6 +40,9 @@ void PreCompiledLexer::parse() {
         ERR NV(in_string) ENDL;
         ERR NV(in_translation_unit) ENDL;
     };
+#define SHOW_STATE(msg)                                                       \
+    show_state(std::string(__FILE__) + ":" + std::to_string(__LINE__) + " " + \
+               msg);
 #endif
     for (;;) {
         if (in_include_block) {
@@ -95,7 +104,89 @@ void PreCompiledLexer::parse() {
             IH = [a-zA-Z_];
             IT = (IH|[0-9]);
             ident     = IH IT*;
+            "#" whitespace "if"{
+                if(in_block_comment||in_line_comment||in_string)
+                    goto loop_continue;
+                in_condition_line = true;
+                ConditonBlock condition_block{};
+                condition_block.start = last_cursor-start;
+                condition_block.start_line = line;
+                ConditonItemBlock condition_item_block{};
+                condition_item_block.start = last_cursor-start;
+                condition_item_block.start_line = line;
+                condition_block.blocks.push_back(condition_item_block);
+                condition_block_stack.push(condition_block);
+                goto loop_continue;
+            }
+            "#" whitespace "ifdef"{
+                if(in_block_comment||in_line_comment||in_string)
+                    goto loop_continue;
+                in_condition_line = true;
+                ConditonBlock condition_block{};
+                condition_block.start = last_cursor-start;
+                condition_block.start_line = line;
+                ConditonItemBlock condition_item_block{};
+                condition_item_block.start = last_cursor-start;
+                condition_item_block.start_line = line;
+                condition_block.blocks.push_back(condition_item_block);
+                condition_block_stack.push(condition_block);
+                goto loop_continue;
 
+            }
+            "#" whitespace "elif"{
+                if(in_block_comment||in_line_comment||in_string)
+                    goto loop_continue;
+                in_condition_line = true;
+                condition_block_stack.top().blocks.back().length =
+                    last_cursor-start-condition_block_stack.top().blocks.back().start;
+                condition_block_stack.top().blocks.back().end_line = line-1;
+                ConditonItemBlock condition_item_block{};
+                condition_item_block.start = last_cursor-start;
+                condition_item_block.start_line = line;
+                condition_block_stack.top().blocks.push_back(condition_item_block);
+                goto loop_continue;
+
+            }
+            "#" whitespace "elifdef"{
+                if(in_block_comment||in_line_comment||in_string)
+                    goto loop_continue;
+                in_condition_line = true;
+                condition_block_stack.top().blocks.back().length =
+                    last_cursor-start-condition_block_stack.top().blocks.back().start;
+                condition_block_stack.top().blocks.back().end_line = line-1;
+                ConditonItemBlock condition_item_block{};
+                condition_item_block.start = last_cursor-start;
+                condition_item_block.start_line = line;
+                condition_block_stack.top().blocks.push_back(condition_item_block);
+                goto loop_continue;
+            }
+            "#" whitespace "else"{
+                if(in_block_comment||in_line_comment||in_string)
+                    goto loop_continue;
+                in_condition_line = true;
+                condition_block_stack.top().blocks.back().length =
+                    last_cursor-start-condition_block_stack.top().blocks.back().start;
+                condition_block_stack.top().blocks.back().end_line = line-1;
+                ConditonItemBlock condition_item_block{};
+                condition_item_block.start = last_cursor-start;
+                condition_item_block.start_line = line;
+                condition_block_stack.top().blocks.push_back(condition_item_block);
+                goto loop_continue;
+
+            }
+            "#" whitespace "endif"{
+                if(in_block_comment||in_line_comment||in_string)
+                    goto loop_continue;
+                if(!condition_block_stack.empty()){
+                    condition_block_stack.top().blocks.back().length =
+                        last_cursor-start-condition_block_stack.top().blocks.back().start;
+                    condition_block_stack.top().blocks.back().end_line = line-1;
+                }
+
+                in_condition_endif_line = true;
+                goto loop_continue;
+
+            }
             "#" whitespace "include" whitespace [<"] {
                 if(in_block_comment||in_line_comment||in_string)
                 goto loop_continue;
@@ -177,7 +268,7 @@ void PreCompiledLexer::parse() {
                     goto loop_continue;
                 }
                 if(in_block_comment||in_line_comment||in_macro_define)
-                    goto loop_continue; 
+                    goto loop_continue;
                 in_string = !in_string;
                 if(in_string){
                     __string_blocks.emplace_back(PreCompiledBlock{});
@@ -206,6 +297,26 @@ void PreCompiledLexer::parse() {
                 if(in_translation_unit){
                     in_translation_unit = false;
                     goto loop_continue; }
+                if(in_condition_line) {
+                    condition_block_stack.top().blocks.back().condition_length =
+                        (YYCURSOR-start)-condition_block_stack.top().blocks.back().start;
+                    in_condition_line = false;
+                }
+                if(in_condition_endif_line) {
+                    in_condition_endif_line = false;
+                    OUT VV("End condition block") ENDL;
+                    auto b = condition_block_stack.top();
+                    b.end_line = line-1;
+                    b.length = last_cursor-start-b.start;
+                    condition_block_stack.pop();
+                    if(condition_block_stack.empty()){
+                        __condition_blocks.push_back(b);
+                    }else{
+                        if(condition_block_stack.top().blocks.size()){
+                           condition_block_stack.top().blocks.back().sub_blocks.push_back(b);
+                        }
+                    }
+                }
                 if(in_string){
                     SHOW_STATE("End string With newline");
                    in_string=false; }

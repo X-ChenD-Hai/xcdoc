@@ -3,8 +3,7 @@
 #include <iostream>
 #include <string>
 
-#define __debug__
-#ifdef __debug__
+#ifdef __xcdoc_debug__
 #define ERR std::cerr
 #define WERR std::wcerr
 #define OUT std::cout
@@ -13,9 +12,6 @@
 #define SV(n, v) << #n << ": " << (v) << ", "
 #define VV(v) << (v) << " "
 #define ENDL << std::endl
-#define SHOW_STATE(msg)                                                       \
-    show_state(std::string(__FILE__) + ":" + std::to_string(__LINE__) + " " + \
-               msg);
 #else
 #define ERR
 #define OUT
@@ -25,7 +21,6 @@
 #define SV(n, v)
 #define VV(v)
 #define ENDL
-#define SHOW_STATE(msg)
 #endif
 namespace utiles {
 inline std::wstring read_file(const std::string &filename) {

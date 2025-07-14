@@ -5,23 +5,31 @@
 class PreCompiledLexer {
    public:
     struct PreCompiledBlock {
-        size_t start;
-        size_t length;
-        size_t start_line;
-        size_t end_line;
+        size_t start{0};
+        size_t length{0};
+        size_t start_line{0};
+        size_t end_line{0};
     };
     struct Ident {
-        size_t start;
-        size_t length;
-        size_t line;
-        size_t macro_id;
+        size_t start{0};
+        size_t length{0};
+        size_t line{0};
+        size_t macro_id{0};
     };
     struct MacroDefineBlock : public PreCompiledBlock {
-        size_t ident_start;
-        size_t ident_length;
+        size_t ident_start{0};
+        size_t ident_length{0};
     };
     struct IncludeBlock : public PreCompiledBlock {
         std::wstring include_path;
+    };
+    struct ConditonBlock;
+    struct ConditonItemBlock : public PreCompiledBlock {
+        size_t condition_length{0};
+        std::vector<ConditonBlock> sub_blocks{};
+    };
+    struct ConditonBlock : public PreCompiledBlock {
+        std::vector<ConditonItemBlock> blocks{};
     };
 
    private:
@@ -34,6 +42,7 @@ class PreCompiledLexer {
     std::vector<PreCompiledBlock> __line_comment_blocks;
     std::vector<PreCompiledBlock> __block_comment_blocks;
     std::vector<Ident> __macro_idents;
+    std::vector<ConditonBlock> __condition_blocks;
 
    public:
     PreCompiledLexer(const std::string &path);
@@ -60,5 +69,8 @@ class PreCompiledLexer {
     }
     inline const std::vector<Ident> &macro_idents() const {
         return __macro_idents;
+    }
+    inline const std::vector<ConditonBlock> &condition_blocks() const {
+        return __condition_blocks;
     }
 };
