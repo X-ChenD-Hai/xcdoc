@@ -1,0 +1,13 @@
+/*
+!/.gitignore
+!/src
+!/tests
+!/docs
+!/CMakeLists.txt
+!/README.md
+!.clang-format
+!resources/
+!vcpkg.json
+!CMakePresets.json
+!Doxyfile
+docs/doxygen
