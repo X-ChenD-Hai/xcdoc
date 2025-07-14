@@ -5,7 +5,7 @@ int main() {
     using namespace std;
     system("cls");
 
-    PreCompiledLexer lexer("test.cc");
+    PreCompiledLexer lexer(XCDOC_TESTS_RESOURCE_DIR "/test.cc");
     OUT VV("Include blocks:") ENDL;
     for (auto header : lexer.include_blocks()) {
         WOUT NV(header.start) NV(header.length) NV(header.include_path)
