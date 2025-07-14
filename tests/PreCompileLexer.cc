@@ -1,12 +1,18 @@
+#include <string>
+
 #include "PreCompiledLexer.h"
 #include "utils.h"
 
 int main() {
+    std::wstring ss{L"12"};
+    auto s = ss.begin();
+
 #ifdef __xcdoc_debug__
     using namespace std;
     system("cls");
-
-    PreCompiledLexer lexer(XCDOC_TESTS_RESOURCES_DIR "test.cc");
+    auto sorce = new std::wstring(
+        utiles::read_file(XCDOC_TESTS_RESOURCES_DIR "testPreCompileLexer.cc"));
+    PreCompiledLexer lexer(sorce);
     OUT VV("------ Include blocks:") ENDL;
     for (auto header : lexer.include_blocks()) {
         WOUT NV(header.start) NV(header.length) NV(header.include_path)
@@ -43,18 +49,18 @@ int main() {
     OUT VV("------ Macro Conditions:") ENDL;
     for (auto& i : lexer.condition_blocks()) {
         [](this auto&& self, const PreCompiledLexer::ConditonBlock& i,
-           const std::wstring& s) -> void {
+           const std::wstring& s, const std::wstring& s1) -> void {
             WOUT VV(s) SV(s, i.start) SV(l, i.length) SV(sl, i.start_line)
                 SV(el, i.end_line) ENDL;
             for (auto& j : i.blocks) {
-                WOUT VV(s) VV("|-- block: ") SV(s, j.start) SV(l, j.length)
+                WOUT VV(s1) VV("-- block: ") SV(s, j.start) SV(l, j.length)
                     SV(sl, j.start_line) SV(el, j.end_line)
                         SV(cl, j.condition_length) ENDL;
                 for (auto& k : j.sub_blocks) {
-                    self(k, s + L"\t");
+                    self(k, s + L"\t ", s1 + L"\t  |");
                 }
             }
-        }(i, L"");
+        }(i, L"", L" |");
     }
 
 #endif

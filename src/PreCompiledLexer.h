@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -33,8 +34,7 @@ class PreCompiledLexer {
     };
 
    private:
-    std::string path;
-    std::wstring content;
+    const std::wstring* content;
     std::unordered_map<std::wstring, size_t> __macro_define_map;
     std::vector<IncludeBlock> __include_blocks;
     std::vector<MacroDefineBlock> __macro_define_blocks;
@@ -45,7 +45,7 @@ class PreCompiledLexer {
     std::vector<ConditonBlock> __condition_blocks;
 
    public:
-    PreCompiledLexer(const std::string &path);
+    PreCompiledLexer(const std::wstring *content);
 
     void parse();
     inline const std::vector<IncludeBlock> &include_blocks() const {

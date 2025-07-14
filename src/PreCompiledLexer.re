@@ -6,17 +6,17 @@
 #include "PreCompiledLexer.h"
 #include "utils.h"
 
-PreCompiledLexer::PreCompiledLexer(const std::string &path)
-    : path(path), content(utiles::read_file(path) + L"\n") {
+PreCompiledLexer::PreCompiledLexer(const std::wstring *content)
+    : content(content) {
     parse();
 }
 void PreCompiledLexer::parse() {
     using namespace std;
-    auto start = content.c_str();
-    auto YYCURSOR = content.c_str();
+    auto start = content->c_str();
+    auto YYCURSOR = content->c_str();
     auto YYMARKER = YYCURSOR;
     auto last_cursor = YYCURSOR;
-    auto limit = YYCURSOR + content.size();
+    auto limit = YYCURSOR + content->size();
     bool in_include_block = false;
     bool in_macro_define = false;
     bool in_line_comment = false;
@@ -73,17 +73,17 @@ void PreCompiledLexer::parse() {
             auto &ss = __string_blocks.back();
             auto ns =
                 L")" +
-                (content.substr(ss.start + 1,
-                                content.find('(', ss.start) - ss.start - 1)) +
+                (content->substr(ss.start + 1,
+                                 content->find('(', ss.start) - ss.start - 1)) +
                 L"\"";
-            auto pos = content.find(ns, ss.start) + ns.size();
+            auto pos = content->find(ns, ss.start) + ns.size();
             line += std::count(start + ss.start, start + pos, L'\n');
 
             WOUT NV(ns) NV(line) ENDL;
             WOUT NV(pos) ENDL;
-            WOUT NV(content.find(ns, ss.start)) ENDL;
-            WOUT NV(content[pos - 1]) ENDL;
-            WOUT NV(content[pos]) ENDL;
+            WOUT NV(content->find(ns, ss.start)) ENDL;
+            WOUT NV(content->at(pos - 1)) ENDL;
+            WOUT NV(content->at(pos)) ENDL;
             WOUT NV(content[pos + 1]) ENDL;
             YYCURSOR = start + pos;
             WOUT NV(YYCURSOR) ENDL;
@@ -189,7 +189,7 @@ void PreCompiledLexer::parse() {
             }
             "#" whitespace "include" whitespace [<"] {
                 if(in_block_comment||in_line_comment||in_string)
-                goto loop_continue;
+                    goto loop_continue;
                 in_include_block = true;
                 __include_blocks.emplace_back(IncludeBlock{});
                 __include_blocks.back().start = (size_t)(YYMARKER-start);
@@ -198,7 +198,7 @@ void PreCompiledLexer::parse() {
                 goto loop_continue; }
             "#" whitespace "define" [ \t]+  {
                 if(in_block_comment||in_line_comment||in_string)
-                 goto loop_continue;
+                    goto loop_continue;
                 ERR VV("Start macro define") ENDL;
                  in_macro_define = true;
                 __macro_define_blocks.emplace_back(MacroDefineBlock{});
@@ -214,12 +214,12 @@ void PreCompiledLexer::parse() {
                 if(in_macro_define&&__macro_define_blocks.back().ident_length==0){
                     __macro_define_blocks.back().ident_length =
                         (size_t)(YYCURSOR-start)-__macro_define_blocks.back().ident_start;
-                    __macro_define_map[content.substr(__macro_define_blocks.back().ident_start,
+                    __macro_define_map[content->substr(__macro_define_blocks.back().ident_start,
                         __macro_define_blocks.back().ident_length)]=
                         __macro_define_blocks.size()-1;
                 }else {
                     std::wstring ident =
-                        content.substr(last_cursor-start,YYCURSOR-last_cursor);
+                        content->substr(last_cursor-start,YYCURSOR-last_cursor);
                         if(auto it=__macro_define_map.find(ident);
                             it!=__macro_define_map.end()){
                             __macro_idents.emplace_back(
@@ -234,7 +234,7 @@ void PreCompiledLexer::parse() {
                 goto loop_continue; }
             [/][*] {
                 if(in_block_comment||in_line_comment||in_string)
-                goto loop_continue;
+                    goto loop_continue;
                 __block_comment_blocks.emplace_back(PreCompiledBlock{});
                 __block_comment_blocks.back().start =
                     (size_t)(YYMARKER-start);
@@ -292,11 +292,12 @@ void PreCompiledLexer::parse() {
                 __line_comment_blocks.back().start_line = line;
                 goto loop_continue;
              }
-            "\n" {
+            [ \v\t\r]+  { goto loop_continue; }
+            [\x00\n] {
                 line++;
                 if(in_translation_unit){
                     in_translation_unit = false;
-                    goto loop_continue; }
+                    goto end_line; }
                 if(in_condition_line) {
                     condition_block_stack.top().blocks.back().condition_length =
                         (YYCURSOR-start)-condition_block_stack.top().blocks.back().start;
@@ -333,10 +334,11 @@ void PreCompiledLexer::parse() {
                     __macro_define_blocks.back().end_line = line-1;
                     in_macro_define = false;
                 }
+                end_line:
+                if(*(YYCURSOR-1) == 0)
+                    break;
                 goto loop_continue;
-              }
-            [ \v\t\r]+  { goto loop_continue; }
-            [\x00] { break; }
+             }
             *      { goto loop_continue; }
         */
     loop_continue:
