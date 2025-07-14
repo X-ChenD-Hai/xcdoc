@@ -1,15 +1,31 @@
-#include <string>
-#define asd() sadf sf ad
-#define __as \
-    auto s = R"A123(
-asfsfg
-sfg"
-sdg)A123";
-auto a = "a";
-__as
-    // sdfg
-    // safd
+#ifdef A
+asd
+#ifdef A
+//
 
-    /*
-    aGH
-    */
+#endif
+
+#elif C
+#if C
+#if CC
+#endif
+#elifdef C
+
+auto s = R"(
+adfafar
+asghadf
+#endif
+#endif
+#endif
+#endif
+#endif
+)"
+
+#endif
+
+addd
+#endif
+// End of code
+#ifdef A
+
+#endif
