@@ -23,14 +23,14 @@
 #define ENDL
 #endif
 namespace utiles {
-inline std::wstring read_file(const std::string &filename) {
+inline std::string read_file(const std::string &filename) {
     std::ifstream ifs(filename);
     if (!ifs) {
         ERR VV("Failed to open file: ") VV(filename) ENDL;
-        return L"";
+        return "";
     }
-    std::wstring content((std::istreambuf_iterator<char>(ifs)),
-                         std::istreambuf_iterator<char>());
+    std::string content((std::istreambuf_iterator<char>(ifs)),
+                        std::istreambuf_iterator<char>());
     return content;
 }
 }  // namespace utiles

@@ -1,4 +1,5 @@
 #pragma once
+#include <stack>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -20,9 +21,10 @@ class PreCompiledLexer {
     struct MacroDefineBlock : public PreCompiledBlock {
         size_t ident_start{0};
         size_t ident_length{0};
+        size_t body_start{0};
     };
     struct IncludeBlock : public PreCompiledBlock {
-        std::wstring include_path;
+        std::string include_path;
     };
     struct ConditonBlock;
     struct ConditonItemBlock : public PreCompiledBlock {
@@ -34,8 +36,8 @@ class PreCompiledLexer {
     };
 
    private:
-    const std::wstring* content;
-    std::unordered_map<std::wstring, size_t> __macro_define_map;
+    const std::string *__content;
+    std::unordered_map<std::string, size_t> __macro_define_map;
     std::vector<IncludeBlock> __include_blocks;
     std::vector<MacroDefineBlock> __macro_define_blocks;
     std::vector<PreCompiledBlock> __string_blocks;
@@ -44,10 +46,34 @@ class PreCompiledLexer {
     std::vector<Ident> __macro_idents;
     std::vector<ConditonBlock> __condition_blocks;
 
-   public:
-    PreCompiledLexer(const std::wstring *content);
+   private:
+    const char *start;
+    const char *YYCURSOR;
+    const char *YYMARKER = YYCURSOR;
+    const char *last_cursor = YYCURSOR;
+    const char *limit = YYCURSOR + __content->size();
+    const char *pre_cursor;
+    bool in_include_block = false;
+    bool in_macro_define = false;
+    bool in_line_comment = false;
+    bool in_block_comment = false;
+    bool in_string = false;
+    bool in_translation_unit = false;
+    bool in_name_force_string = false;
+    bool in_condition_line = false;
+    bool in_condition_endif_line = false;
+    const char *__macro_end{nullptr};
+    std::stack<ConditonBlock> condition_block_stack;
+    std::stack<std::pair<const char *, const char *>> macro_expansion_stack;
+    size_t line = 1;
 
-    void parse();
+    void __parse_define_block();
+
+   public:
+    PreCompiledLexer(const std::string *content);
+
+    // void parse();
+    const char *next();
     inline const std::vector<IncludeBlock> &include_blocks() const {
         return __include_blocks;
     }
@@ -63,7 +89,7 @@ class PreCompiledLexer {
     inline const std::vector<PreCompiledBlock> &block_comment_blocks() const {
         return __block_comment_blocks;
     }
-    inline const std::unordered_map<std::wstring, size_t> &macro_define_map()
+    inline const std::unordered_map<std::string, size_t> &macro_define_map()
         const {
         return __macro_define_map;
     }
@@ -73,4 +99,5 @@ class PreCompiledLexer {
     inline const std::vector<ConditonBlock> &condition_blocks() const {
         return __condition_blocks;
     }
+    inline const std::string &content() const { return *__content; }
 };

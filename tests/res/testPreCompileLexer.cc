@@ -1,31 +1,7 @@
-#ifdef A
-asd
-#ifdef A
-//
+// #define 中国 class A;
+#define AA A s ss;
+#define 中行 class A;
 
-#endif
-
-#elif C
-#if C
-#if CC
-#endif
-#elifdef C
-
-auto s = R"(
-adfafar
-asghadf
-#endif
-#endif
-#endif
-#endif
-#endif
-)"
-
-#endif
-
-addd
-#endif
-// End of code
-#ifdef A
-
-#endif
+中行
+class Aaaa;
+class A中国;
