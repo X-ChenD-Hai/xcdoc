@@ -33,7 +33,23 @@ int main() {
     OUT VV("------ Macro define blocks:") ENDL;
     for (auto block : lexer.macro_define_blocks()) {
         OUT NV(block.start) NV(block.length) NV(block.ident_start)
-            NV(block.ident_length) NV(block.end_line) ENDL;
+            NV(block.ident_length) NV(block.end_line) SV(f, block.is_function)
+                ENDL;
+        if (block.is_function) {
+            for (auto& p : block.params) {
+                OUT VV("\t")
+                    SV(pname, lexer.content().substr(p.start, p.length)) ENDL;
+                for (auto& r : p.refs) {
+                    OUT VV("\t\tref: ") NV(r.start) NV(r.length) SV(
+                        type,
+                        r.type == PreCompiledLexer::MacroParamRefType::Normal
+                            ? "Normal"
+                        : r.type == PreCompiledLexer::MacroParamRefType::Concat
+                            ? "Concat"
+                            : "ToString") ENDL;
+                }
+            }
+        }
     }
     OUT VV("------ String blocks:") ENDL;
     for (auto block : lexer.string_blocks()) {

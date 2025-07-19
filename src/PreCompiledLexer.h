@@ -18,10 +18,28 @@ class PreCompiledLexer {
         size_t line{0};
         size_t macro_id{0};
     };
+    enum class MacroParamRefType {
+        Normal,
+        Concat,
+        ToString,
+    };
+
+    struct MacroParamRef {
+        size_t start{0};
+        size_t length{0};
+        MacroParamRefType type{MacroParamRefType::Normal};
+    };
+    struct MacroParam {
+        size_t start{0};
+        size_t length{0};
+        std::vector<MacroParamRef> refs{};
+    };
     struct MacroDefineBlock : public PreCompiledBlock {
         size_t ident_start{0};
         size_t ident_length{0};
         size_t body_start{0};
+        bool is_function{false};
+        std::vector<MacroParam> params{};
     };
     struct IncludeBlock : public PreCompiledBlock {
         std::string include_path;
@@ -62,6 +80,8 @@ class PreCompiledLexer {
     bool in_name_force_string = false;
     bool in_condition_line = false;
     bool in_condition_endif_line = false;
+    bool in_macro_param_define = false;
+    MacroParamRefType cur_macro_param_ref_type = MacroParamRefType::Normal;
     const char *__macro_end{nullptr};
     std::stack<ConditonBlock> condition_block_stack;
     std::stack<std::pair<const char *, const char *>> macro_expansion_stack;

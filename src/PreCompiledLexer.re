@@ -101,8 +101,6 @@ const char *PreCompiledLexer::next() {
             re2c:define:YYCTYPE = char;
             re2c:yyfill:enable = 0;
             whitespace = [ \t]*;
-            IH = [a-zA-Z_];
-            IT = (IH|[0-9]);
             ident     = ident_;
             "#" whitespace "if"{
                 if(in_block_comment||in_line_comment||in_string)
@@ -208,22 +206,98 @@ const char *PreCompiledLexer::next() {
                     (size_t)(YYCURSOR-start);
                 __macro_define_blocks.back().start_line = line;
                 goto loop_continue; }
-            
+            "(" {
+                if(in_block_comment||
+                    in_line_comment||
+                    in_condition_line||
+                    in_condition_endif_line||
+                    in_string)
+                    goto loop_continue;
+                else if(in_macro_define){
+                    __macro_define_blocks.back().is_function = true;
+                    in_macro_param_define = true;
+                    goto loop_continue;
+                }
+                break;
+            }
+            whitespace "##" whitespace {
+                if(in_block_comment||
+                    in_line_comment||
+                    in_condition_line||
+                    in_condition_endif_line||
+                    in_string)
+                    goto loop_continue;
+                else if(in_macro_define){
+                    cur_macro_param_ref_type = MacroParamRefType::Concat;
+                    goto loop_continue;
+                }
+                break;
+            }
+            whitespace "#" whitespace {
+                if(in_block_comment||
+                    in_line_comment||
+                    in_condition_line||
+                    in_condition_endif_line||
+                    in_string)
+                    goto loop_continue;
+                else if(in_macro_define){
+                    cur_macro_param_ref_type = MacroParamRefType::ToString;
+                    goto loop_continue;
+                }
+                break;
+            }
+            ")" {
+                if(in_block_comment||
+                    in_line_comment||
+                    in_condition_line||
+                    in_condition_endif_line||
+                    in_string)
+                    goto loop_continue;
+                else if(in_macro_define){
+                    in_macro_param_define = false;
+                    goto loop_continue;
+                }
+                break;
+            }
             ident {
                 if(in_block_comment||in_line_comment||in_string) goto
                     loop_continue;
+                    auto
+         ident=__content->substr(last_cursor-start,YYCURSOR-last_cursor);
                 if(in_macro_define){
                     if(__macro_define_blocks.back().ident_length==0){
-                    __macro_define_blocks.back().ident_length =
-                        (size_t)(YYCURSOR-start)-__macro_define_blocks.back().ident_start;
-                    __macro_define_map[__content->substr(__macro_define_blocks.back().ident_start,
-                        __macro_define_blocks.back().ident_length)]=
-                        __macro_define_blocks.size()-1;
-                    __macro_define_blocks.back().body_start = (size_t)(YYCURSOR-start);
+                        __macro_define_blocks.back().ident_length =
+                            (size_t)(YYCURSOR-start)-__macro_define_blocks.back().ident_start;
+                        __macro_define_map[__content->substr(__macro_define_blocks.back().ident_start,
+                            __macro_define_blocks.back().ident_length)]=
+                            __macro_define_blocks.size()-1;
+                        __macro_define_blocks.back().body_start =
+                            (size_t)(YYCURSOR-start);
+                    }else if(in_macro_param_define){
+                        __macro_define_blocks.back().params.emplace_back(
+                            last_cursor-start,
+                            YYCURSOR-last_cursor,
+                            std::vector<MacroParamRef>{}
+                        );
+                    }else if(auto it=std::find_if(
+                                                __macro_define_blocks.back().params.begin(),
+                                                __macro_define_blocks.back().params.end(),
+                                            [&](const auto& b){
+                                                OUT VV("compare: ")
+         SV(mm,__content->substr(b.start,b.length)) NV(ident) ENDL; return
+                                                __content->substr(b.start,b.length)==ident;
+                                            });
+                                        it!=__macro_define_blocks.back().params.end()){
+                        OUT VV("find: ") SV(mm,ident) ENDL;
+                        it->refs.emplace_back(
+                            last_cursor-start,
+                            YYCURSOR-last_cursor,
+                            cur_macro_param_ref_type);
+                            cur_macro_param_ref_type =
+         MacroParamRefType::Normal;
                     }
-                }else if(auto it=__macro_define_map.find(
-                        __content->substr(last_cursor-start,YYCURSOR-last_cursor)
-                    );it!=__macro_define_map.end()){
+                }else if(auto it=__macro_define_map.find(ident);
+                        it!=__macro_define_map.end()){
                         __macro_idents.emplace_back(
                             last_cursor-start,
                             YYCURSOR-last_cursor,
@@ -237,7 +311,8 @@ const char *PreCompiledLexer::next() {
                         );
                         pre_cursor = start+
                             __macro_define_blocks[it->second].body_start;
-                        __macro_end = start + __macro_define_blocks[it->second].start+
+                        __macro_end = start +
+         __macro_define_blocks[it->second].start+
                             __macro_define_blocks[it->second].length;
                         return pre_cursor++;
                 }else if(!(in_block_comment|| in_line_comment||
