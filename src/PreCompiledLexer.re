@@ -10,20 +10,22 @@
     template <>                  \
     PreCompiledLexer::NextAction \
     PreCompiledLexer::__handle<PreCompiledLexer::TokenCode::code>()
-#define FILTER_COMMENT                                                   \
-    if (__state.block_comment || __state.line_comment || __state.string) \
+#define FILTER_COMMENT                                                     \
+    if (__state.block_comment || __state.line_comment || __state.string || \
+        __state.condition_line || __state.condition_endif_line ||          \
+        __state.macro_function_call)                                       \
         return NextAction::Continue;
 IMPL_HANDLE(If) {
     FILTER_COMMENT
     __state.condition_line = true;
     ConditonBlock condition_block{};
     condition_block.start = last_cursor - start;
-    condition_block.start_line = line;
+    condition_block.start_line = __state.line;
     ConditonItemBlock condition_item_block{};
     condition_item_block.start = last_cursor - start;
-    condition_item_block.start_line = line;
+    condition_item_block.start_line = __state.line;
     condition_block.blocks.push_back(condition_item_block);
-    condition_block_stack.push(condition_block);
+    __state.condition_block_stack.push(condition_block);
     return NextAction::Continue;
 }
 IMPL_HANDLE(Ifdef) {
@@ -31,57 +33,64 @@ IMPL_HANDLE(Ifdef) {
     __state.condition_line = true;
     ConditonBlock condition_block{};
     condition_block.start = last_cursor - start;
-    condition_block.start_line = line;
+    condition_block.start_line = __state.line;
     ConditonItemBlock condition_item_block{};
     condition_item_block.start = last_cursor - start;
-    condition_item_block.start_line = line;
+    condition_item_block.start_line = __state.line;
     condition_block.blocks.push_back(condition_item_block);
-    condition_block_stack.push(condition_block);
+    __state.condition_block_stack.push(condition_block);
     return NextAction::Continue;
 }
 IMPL_HANDLE(Elif) {
     FILTER_COMMENT
     __state.condition_line = true;
-    condition_block_stack.top().blocks.back().length =
-        last_cursor - start - condition_block_stack.top().blocks.back().start;
-    condition_block_stack.top().blocks.back().end_line = line - 1;
+    __state.condition_block_stack.top().blocks.back().length =
+        last_cursor - start -
+        __state.condition_block_stack.top().blocks.back().start;
+    __state.condition_block_stack.top().blocks.back().end_line =
+        __state.line - 1;
     ConditonItemBlock condition_item_block{};
     condition_item_block.start = last_cursor - start;
-    condition_item_block.start_line = line;
-    condition_block_stack.top().blocks.push_back(condition_item_block);
+    condition_item_block.start_line = __state.line;
+    __state.condition_block_stack.top().blocks.push_back(condition_item_block);
     return NextAction::Continue;
 }
 IMPL_HANDLE(Elifdef) {
     FILTER_COMMENT
     __state.condition_line = true;
-    condition_block_stack.top().blocks.back().length =
-        last_cursor - start - condition_block_stack.top().blocks.back().start;
-    condition_block_stack.top().blocks.back().end_line = line - 1;
+    __state.condition_block_stack.top().blocks.back().length =
+        last_cursor - start -
+        __state.condition_block_stack.top().blocks.back().start;
+    __state.condition_block_stack.top().blocks.back().end_line =
+        __state.line - 1;
     ConditonItemBlock condition_item_block{};
     condition_item_block.start = last_cursor - start;
-    condition_item_block.start_line = line;
-    condition_block_stack.top().blocks.push_back(condition_item_block);
+    condition_item_block.start_line = __state.line;
+    __state.condition_block_stack.top().blocks.push_back(condition_item_block);
     return NextAction::Continue;
 }
 IMPL_HANDLE(Else) {
     FILTER_COMMENT
     __state.condition_line = true;
-    condition_block_stack.top().blocks.back().length =
-        last_cursor - start - condition_block_stack.top().blocks.back().start;
-    condition_block_stack.top().blocks.back().end_line = line - 1;
+    __state.condition_block_stack.top().blocks.back().length =
+        last_cursor - start -
+        __state.condition_block_stack.top().blocks.back().start;
+    __state.condition_block_stack.top().blocks.back().end_line =
+        __state.line - 1;
     ConditonItemBlock condition_item_block{};
     condition_item_block.start = last_cursor - start;
-    condition_item_block.start_line = line;
-    condition_block_stack.top().blocks.push_back(condition_item_block);
+    condition_item_block.start_line = __state.line;
+    __state.condition_block_stack.top().blocks.push_back(condition_item_block);
     return NextAction::Continue;
 }
 IMPL_HANDLE(Endif) {
     FILTER_COMMENT
-    if (!condition_block_stack.empty()) {
-        condition_block_stack.top().blocks.back().length =
+    if (!__state.condition_block_stack.empty()) {
+        __state.condition_block_stack.top().blocks.back().length =
             last_cursor - start -
-            condition_block_stack.top().blocks.back().start;
-        condition_block_stack.top().blocks.back().end_line = line - 1;
+            __state.condition_block_stack.top().blocks.back().start;
+        __state.condition_block_stack.top().blocks.back().end_line =
+            __state.line - 1;
     }
     __state.condition_endif_line = true;
     return NextAction::Continue;
@@ -91,8 +100,8 @@ IMPL_HANDLE(Include) {
     __state.include_block = true;
     __include_blocks.emplace_back(IncludeBlock{});
     __include_blocks.back().start = (size_t)(YYMARKER - start);
-    __include_blocks.back().start_line = line;
-    __include_blocks.back().end_line = line;
+    __include_blocks.back().start_line = __state.line;
+    __include_blocks.back().end_line = __state.line;
     const char *en = nullptr;
     if (YYCURSOR < limit) {
         if (*(YYCURSOR - 1) == '"')
@@ -123,7 +132,7 @@ IMPL_HANDLE(Define) {
     __macro_define_blocks.emplace_back(MacroDefineBlock{});
     __macro_define_blocks.back().start = (size_t)(last_cursor - start);
     __macro_define_blocks.back().ident_start = (size_t)(YYCURSOR - start);
-    __macro_define_blocks.back().start_line = line;
+    __macro_define_blocks.back().start_line = __state.line;
     return NextAction::Continue;
 }
 IMPL_HANDLE(Left_parenthesis) {
@@ -135,27 +144,11 @@ IMPL_HANDLE(Left_parenthesis) {
         __macro_define_blocks.back().is_function = true;
         __state.macro_param_define = true;
         return NextAction::Continue;
-    }
-    return NextAction::Break;
-}
-IMPL_HANDLE(Two_hash) {
-    if (__state.block_comment || __state.line_comment ||
-        __state.condition_line || __state.condition_endif_line ||
-        __state.string)
-        return NextAction::Continue;
-    else if (__state.macro_define) {
-        cur_macro_param_ref_type = MacroParamRefType::Concat;
-        return NextAction::Continue;
-    }
-    return NextAction::Break;
-}
-IMPL_HANDLE(Hash) {
-    if (__state.block_comment || __state.line_comment ||
-        __state.condition_line || __state.condition_endif_line ||
-        __state.string)
-        return NextAction::Continue;
-    else if (__state.macro_define) {
-        cur_macro_param_ref_type = MacroParamRefType::ToString;
+    } else if (__state.macro_function_call) {
+        if (++__state.parenthesis_count == 1) {
+            __state.last_param_cursor = YYCURSOR;
+            __state.last_param_line = __state.line;
+        }
         return NextAction::Continue;
     }
     return NextAction::Break;
@@ -167,65 +160,200 @@ IMPL_HANDLE(Right_parenthesis) {
         return NextAction::Continue;
     else if (__state.macro_define) {
         __state.macro_param_define = false;
+        __macro_define_blocks.back().body_start = (size_t)(YYCURSOR - start);
+        return NextAction::Continue;
+    } else if (__state.macro_function_call) {
+        if (--__state.parenthesis_count == 0) {
+            static const char *_s = " \"";
+            __state.macro_function_call = false;
+            auto &ident = __macro_idents.back();
+            if (__state.last_param_cursor != last_cursor)
+                ident.real_params.emplace_back(
+                    __state.last_param_cursor - start,
+                    YYCURSOR - __state.last_param_cursor - 1,
+                    __state.last_param_line, __state.line);
+            auto &macro = __macro_define_blocks[ident.macro_id];
+            auto _last_end = macro.body_start;
+            auto _last_type = MacroParamRefType::Normal;
+            for (auto &ref : macro.params_refs) {
+                auto &real = ident.real_params[ref.shape_param_id];
+                if (_last_end < ref.start)
+                    __state.macro_expand_queue.emplace(start + ref.start,
+                                                       start + real.start);
+                else if (__state.macro_expand_queue.size()) {
+                    __state.macro_expand_queue.back().next_expanded_start =
+                        start + real.start;
+                }
+                if (ref.type == MacroParamRefType::ToString) {
+                    if (__state.macro_expand_queue.size()) {
+                        __state.macro_expand_queue.back().next_expanded_start =
+                            _s + 1;
+                    }
+                    __state.macro_expand_queue.emplace(_s + 2,
+                                                       start + real.start);
+                    __state.macro_expand_queue.emplace(
+                        start + real.start + real.length, _s + 1);
+                    __state.macro_expand_queue.emplace(
+                        _s + 2, start + ref.start + ref.length);
+                } else {
+                    __state.macro_expand_queue.emplace(
+                        start + real.start + real.length,
+                        start + ref.start + ref.length);
+                    _last_end = ref.start + ref.length;
+                }
+                _last_type = ref.type;
+            }
+            if (_last_end < macro.start + macro.length ||
+                _last_end == macro.body_start)
+                __state.macro_expand_queue.emplace(
+                    start + macro.start + macro.length, YYCURSOR);
+            else {
+                __state.macro_expand_queue.back().next_expanded_start =
+                    YYCURSOR;
+            }
+            if (macro.params_refs.size())
+                if (auto &r = macro.params_refs.front();
+                    r.start == macro.body_start)
+                    pre_cursor =
+                        start + ident.real_params[r.shape_param_id].start;
+                else
+                    pre_cursor = start + macro.body_start;
+            else
+                pre_cursor = start + macro.body_start;
+
+            return NextAction::ReturnPreCorsur;
+        }
+        return NextAction::Continue;
+    }
+    return NextAction::Break;
+}
+IMPL_HANDLE(Comma) {
+    if (__state.block_comment || __state.line_comment || __state.string ||
+        __state.condition_line || __state.condition_endif_line ||
+        __state.macro_define)
+        return NextAction::Continue;
+    else if (__state.macro_function_call) {
+        if (__state.parenthesis_count == 1) {
+            __macro_idents.back().real_params.emplace_back(
+                __state.last_param_cursor - start,
+                last_cursor - __state.last_param_cursor,
+                __state.last_param_line, __state.line);
+            __state.last_param_cursor = YYCURSOR;
+            __state.last_param_line = __state.line;
+        }
+        return NextAction::Continue;
+    }
+    return NextAction::Break;
+}
+IMPL_HANDLE(Double_hash) {
+    FILTER_COMMENT
+    if (__state.macro_define) {
+        __state.last_param_cursor = last_cursor;
+        __state.cur_macro_param_ref_type = MacroParamRefType::Concat;
+        return NextAction::Continue;
+    }
+    return NextAction::Break;
+}
+IMPL_HANDLE(Hash) {
+    FILTER_COMMENT
+    if (__state.macro_define) {
+        __state.last_param_cursor = last_cursor;
+        __state.cur_macro_param_ref_type = MacroParamRefType::ToString;
+        return NextAction::Continue;
+    }
+    return NextAction::Break;
+}
+IMPL_HANDLE(Ident_before_Double_hash) {
+    FILTER_COMMENT
+    if (__state.macro_define) {
+        auto _pos = std::min(__content->find("#", last_cursor - start),
+                             __content->find(" ", last_cursor - start));
+        std::string_view ident(last_cursor, _pos - (last_cursor - start));
+        if (auto it = std::find_if(__macro_define_blocks.back().params.begin(),
+                                   __macro_define_blocks.back().params.end(),
+                                   [&](const auto &b) {
+                                       return std::string_view(
+                                                  __content->data() + b.start,
+                                                  b.length) == ident;
+                                   });
+            it != __macro_define_blocks.back().params.end()) {
+            OUT VV("find: ") SV(mm, ident) ENDL;
+            __macro_define_blocks.back().params_refs.emplace_back(
+                last_cursor - start, YYCURSOR - last_cursor,
+                it - __macro_define_blocks.back().params.begin(),
+                MacroParamRefType::Concat);
+            __state.cur_macro_param_ref_type = MacroParamRefType::Normal;
+        } else {
+            YYCURSOR = start + _pos;
+        }
         return NextAction::Continue;
     }
     return NextAction::Break;
 }
 IMPL_HANDLE(Ident) {
     FILTER_COMMENT
-    auto ident = __content->substr(last_cursor - start, YYCURSOR - last_cursor);
+    auto ident = std::string_view(last_cursor, YYCURSOR - last_cursor);
     if (__state.macro_define) {
         if (__macro_define_blocks.back().ident_length == 0) {
             __macro_define_blocks.back().ident_length =
                 (size_t)(YYCURSOR - start) -
                 __macro_define_blocks.back().ident_start;
-            __macro_define_map[__content->substr(
-                __macro_define_blocks.back().ident_start,
+            __macro_define_map[std::string_view(
+                start + __macro_define_blocks.back().ident_start,
                 __macro_define_blocks.back().ident_length)] =
                 __macro_define_blocks.size() - 1;
             __macro_define_blocks.back().body_start =
                 (size_t)(YYCURSOR - start);
         } else if (__state.macro_param_define) {
             __macro_define_blocks.back().params.emplace_back(
-                last_cursor - start, YYCURSOR - last_cursor,
-                std::vector<MacroParamRef>{});
+                last_cursor - start, YYCURSOR - last_cursor);
         } else if (auto it = std::find_if(
                        __macro_define_blocks.back().params.begin(),
                        __macro_define_blocks.back().params.end(),
                        [&](const auto &b) {
-                           OUT VV("compare: ")
-                               SV(mm, __content->substr(b.start, b.length))
-                                   NV(ident) ENDL;
-                           return __content->substr(b.start, b.length) == ident;
+                           return std::string_view(start + b.start, b.length) ==
+                                  ident;
                        });
                    it != __macro_define_blocks.back().params.end()) {
             OUT VV("find: ") SV(mm, ident) ENDL;
-            it->refs.emplace_back(last_cursor - start, YYCURSOR - last_cursor,
-                                  cur_macro_param_ref_type);
-            cur_macro_param_ref_type = MacroParamRefType::Normal;
+            if (__state.cur_macro_param_ref_type == MacroParamRefType::Normal) {
+                __macro_define_blocks.back().params_refs.emplace_back(
+                    last_cursor - start, YYCURSOR - last_cursor,
+                    it - __macro_define_blocks.back().params.begin(),
+                    __state.cur_macro_param_ref_type);
+            } else
+                __macro_define_blocks.back().params_refs.emplace_back(
+                    __state.last_param_cursor - start,
+                    YYCURSOR - __state.last_param_cursor,
+                    it - __macro_define_blocks.back().params.begin(),
+                    __state.cur_macro_param_ref_type);
+            __state.cur_macro_param_ref_type = MacroParamRefType::Normal;
         }
+        return NextAction::Continue;
     } else if (auto it = __macro_define_map.find(ident);
                it != __macro_define_map.end()) {
         __macro_idents.emplace_back(last_cursor - start, YYCURSOR - last_cursor,
-                                    line, it->second);
-        last_cursor = YYCURSOR;
-        macro_expansion_stack.emplace(YYCURSOR, last_cursor);
-        pre_cursor = start + __macro_define_blocks[it->second].body_start;
-        __macro_end = start + __macro_define_blocks[it->second].start +
-                      __macro_define_blocks[it->second].length;
-        return NextAction::ReturnPreCorsur;
-    } else if (!(__state.block_comment || __state.line_comment ||
-                 __state.condition_line || __state.condition_endif_line ||
-                 __state.string))
-        return NextAction::Break;
-
-    return NextAction::Continue;
+                                    __state.line, it->second);
+        auto &block = __macro_define_blocks[it->second];
+        if (block.is_function) {
+            __state.macro_function_call = true;
+            return NextAction::Continue;
+        } else {
+            __state.macro_expand_queue.emplace(
+                start + block.start + block.length, YYCURSOR);
+            pre_cursor = start + block.body_start;
+            last_cursor = pre_cursor;
+            return NextAction::ReturnPreCorsur;
+        }
+    }
+    FILTER_COMMENT
+    return NextAction::Break;
 }
 IMPL_HANDLE(Block_comment_start) {
     FILTER_COMMENT
     __block_comment_blocks.emplace_back(PreCompiledBlock{});
     __block_comment_blocks.back().start = (size_t)(YYMARKER - start);
-    __block_comment_blocks.back().start_line = line;
+    __block_comment_blocks.back().start_line = __state.line;
     __state.block_comment = true;
     return NextAction::Continue;
 }
@@ -234,7 +362,7 @@ IMPL_HANDLE(Block_comment_end) {
         __state.block_comment = false;
         __block_comment_blocks.back().length =
             (size_t)(YYCURSOR - start) - __block_comment_blocks.back().start;
-        __block_comment_blocks.back().end_line = line;
+        __block_comment_blocks.back().end_line = __state.line;
     }
     return NextAction::Continue;
 }
@@ -250,11 +378,11 @@ IMPL_HANDLE(Double_quotation_marks) {
     if (__state.string) {
         __string_blocks.emplace_back(PreCompiledBlock{});
         __string_blocks.back().start = (size_t)(YYMARKER - start);
-        __string_blocks.back().start_line = line;
+        __string_blocks.back().start_line = __state.line;
     } else {
         __string_blocks.back().length =
             (size_t)(YYCURSOR - start) - __string_blocks.back().start;
-        __string_blocks.back().end_line = line;
+        __string_blocks.back().end_line = __state.line;
     }
     return NextAction::Continue;
 }
@@ -263,7 +391,7 @@ IMPL_HANDLE(Native_string) {
     FILTER_COMMENT
     __string_blocks.emplace_back(PreCompiledBlock{});
     __string_blocks.back().start = (size_t)(YYMARKER - start);
-    __string_blocks.back().start_line = line;
+    __string_blocks.back().start_line = __state.line;
     __state.name_force_string = true;
     auto &ss = __string_blocks.back();
     auto ns = ")" +
@@ -271,9 +399,9 @@ IMPL_HANDLE(Native_string) {
                                                    ss.start - 1)) +
               "\"";
     auto pos = __content->find(ns, ss.start) + ns.size();
-    line += std::count(start + ss.start, start + pos, L'\n');
+    __state.line += std::count(start + ss.start, start + pos, L'\n');
 
-    OUT NV(ns) NV(line) ENDL;
+    OUT NV(ns) NV(__state.line) ENDL;
     OUT NV(pos) ENDL;
     OUT NV(__content->find(ns, ss.start)) ENDL;
     OUT NV(__content->at(pos - 1)) ENDL;
@@ -295,7 +423,7 @@ IMPL_HANDLE(Line_comment) {
     __state.line_comment = true;
     __line_comment_blocks.emplace_back(PreCompiledBlock{});
     __line_comment_blocks.back().start = (size_t)(YYMARKER - start);
-    __line_comment_blocks.back().start_line = line;
+    __line_comment_blocks.back().start_line = __state.line;
     return NextAction::Continue;
 }
 IMPL_HANDLE(Backslash) {
@@ -303,7 +431,7 @@ IMPL_HANDLE(Backslash) {
     return NextAction::Continue;
 }
 IMPL_HANDLE(Eof) {
-    line++;
+    __state.line++;
     __line_index.push_back(YYCURSOR - start);
     if (__state.translation_unit) {
         __state.translation_unit = false;
@@ -315,24 +443,25 @@ IMPL_HANDLE(Eof) {
         return NextAction::Break;
 
     if (__state.condition_line) {
-        condition_block_stack.top().blocks.back().condition_length =
+        __state.condition_block_stack.top().blocks.back().condition_length =
             (YYCURSOR - start) -
-            condition_block_stack.top().blocks.back().start;
+            __state.condition_block_stack.top().blocks.back().start;
         __state.condition_line = false;
     }
     if (__state.condition_endif_line) {
         __state.condition_endif_line = false;
         OUT VV("End condition block") ENDL;
-        auto b = condition_block_stack.top();
-        b.end_line = line - 1;
+        auto b = __state.condition_block_stack.top();
+        b.end_line = __state.line - 1;
         b.length = last_cursor - start - b.start;
-        condition_block_stack.pop();
-        if (condition_block_stack.empty()) {
+        __state.condition_block_stack.pop();
+        if (__state.condition_block_stack.empty()) {
             __condition_blocks.push_back(b);
         } else {
-            if (condition_block_stack.top().blocks.size()) {
-                condition_block_stack.top().blocks.back().sub_blocks.push_back(
-                    b);
+            if (__state.condition_block_stack.top().blocks.size()) {
+                __state.condition_block_stack.top()
+                    .blocks.back()
+                    .sub_blocks.push_back(b);
             }
         }
     }
@@ -343,13 +472,13 @@ IMPL_HANDLE(Eof) {
         __state.line_comment = false;
         __line_comment_blocks.back().length =
             (size_t)(YYCURSOR - start) - __line_comment_blocks.back().start;
-        __line_comment_blocks.back().end_line = line - 1;
+        __line_comment_blocks.back().end_line = __state.line - 1;
     }
     if (__state.macro_define) {
         ERR VV("End macro define") ENDL;
         __macro_define_blocks.back().length =
             (size_t)(YYCURSOR - start) - __macro_define_blocks.back().start - 1;
-        __macro_define_blocks.back().end_line = line - 1;
+        __macro_define_blocks.back().end_line = __state.line - 1;
         __state.macro_define = false;
     }
 end_line:
@@ -376,14 +505,17 @@ PreCompiledLexer::PreCompiledLexer(const std::string *content)
 }
 const char *PreCompiledLexer::next() {
     using namespace std;
-    if (__macro_end) {
-        if (pre_cursor < __macro_end) {
+    if (__state.macro_expand_queue.size()) {
+        auto &front = __state.macro_expand_queue.front();
+        if (pre_cursor < front.limit) {
             return pre_cursor++;
         } else {
-            __macro_end = nullptr;
-            YYCURSOR = macro_expansion_stack.top().first;
-            last_cursor = macro_expansion_stack.top().second;
-            macro_expansion_stack.pop();
+            OUT NV(front.next_expanded_start - start) ENDL;
+            pre_cursor = last_cursor = YYCURSOR = front.next_expanded_start;
+            __state.macro_expand_queue.pop();
+            if (__state.macro_expand_queue.size()) {
+                return pre_cursor++;
+            }
         }
     } else if (pre_cursor < YYCURSOR) {
         return pre_cursor++;
@@ -427,21 +559,28 @@ const char *PreCompiledLexer::next() {
             "#" whitespace "define" [ \t]+  {
                 HANDEL(Define)
             }
-            "(" {
-                HANDEL(Left_parenthesis)
-            }
             whitespace "##" whitespace {
-                HANDEL(Two_hash)
+                HANDEL(Double_hash)
             }
-            whitespace "#" whitespace {
+            "#" whitespace {
                 HANDEL(Hash)
             }
-            ")" {
+            "(" whitespace {
+                HANDEL(Left_parenthesis)
+            }
+            whitespace ")" {
                HANDEL(Right_parenthesis)
+            }
+            whitespace "," whitespace {
+                HANDEL(Comma)
             }
             ident {
                 HANDEL(Ident)
             }
+            ident whitespace "##" whitespace {
+                HANDEL(Ident_before_Double_hash)
+            }
+
             [/][*] {
                 HANDEL(Block_comment_start)
              }
