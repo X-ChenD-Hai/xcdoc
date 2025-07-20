@@ -52,6 +52,46 @@ class PreCompiledLexer {
     struct ConditonBlock : public PreCompiledBlock {
         std::vector<ConditonItemBlock> blocks{};
     };
+    struct State {
+        bool include_block : 1 = false;
+        bool macro_define : 1 = false;
+        bool line_comment : 1 = false;
+        bool block_comment : 1 = false;
+        bool string : 1 = false;
+        bool translation_unit : 1 = false;
+        bool name_force_string : 1 = false;
+        bool condition_line : 1 = false;
+        bool condition_endif_line : 1 = false;
+        bool macro_param_define : 1 = false;
+    };
+    enum class NextAction { Continue, Break, ReturnPreCorsur };
+    enum class TokenCode {
+        Other,
+        If,
+        Ifdef,
+        Elif,
+        Elifdef,
+        Else,
+        Endif,
+        Include,
+        Define,
+        Left_parenthesis,
+        Right_parenthesis,
+        Block_comment_start,
+        Block_comment_end,
+        Backslash,
+        Line_comment,
+        Double_quotation_marks,
+        Native_string,
+        Hash,
+        Two_hash,
+        Ident,
+        Eof
+    };
+
+   private:
+    template <TokenCode code>
+    NextAction __handle();
 
    private:
     const std::string *__content;
@@ -71,29 +111,31 @@ class PreCompiledLexer {
     const char *last_cursor = YYCURSOR;
     const char *limit = YYCURSOR + __content->size();
     const char *pre_cursor;
-    bool in_include_block = false;
-    bool in_macro_define = false;
-    bool in_line_comment = false;
-    bool in_block_comment = false;
-    bool in_string = false;
-    bool in_translation_unit = false;
-    bool in_name_force_string = false;
-    bool in_condition_line = false;
-    bool in_condition_endif_line = false;
-    bool in_macro_param_define = false;
+    State __state;
     MacroParamRefType cur_macro_param_ref_type = MacroParamRefType::Normal;
     const char *__macro_end{nullptr};
     std::stack<ConditonBlock> condition_block_stack;
+    std::vector<size_t> __line_index{0};
     std::stack<std::pair<const char *, const char *>> macro_expansion_stack;
     size_t line = 1;
 
-    void __parse_define_block();
 
    public:
     PreCompiledLexer(const std::string *content);
 
     // void parse();
     const char *next();
+    inline std::pair<size_t, size_t> line_and_column(size_t pos) const {
+        size_t line_num = 1;
+        size_t column_num = 0;
+        for (size_t i = 0; i < pos && i < __line_index.size(); ++i) {
+            if (__line_index[i] <= pos) {
+                line_num++;
+                column_num = pos - __line_index[i];
+            }
+        }
+        return {line_num, column_num};
+    }
     inline const std::vector<IncludeBlock> &include_blocks() const {
         return __include_blocks;
     }
