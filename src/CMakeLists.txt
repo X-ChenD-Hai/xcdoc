@@ -9,4 +9,5 @@ add_library(xcdoc_lib STATIC)
 target_include_directories(xcdoc_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_sources(xcdoc_lib PRIVATE
     PreCompiledLexer.re.cc
+    string_slice_view.cc
 )

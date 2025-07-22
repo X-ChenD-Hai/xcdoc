@@ -164,63 +164,13 @@ IMPL_HANDLE(Right_parenthesis) {
         return NextAction::Continue;
     } else if (__state.macro_function_call) {
         if (--__state.parenthesis_count == 0) {
-            static const char *_s = " \"";
-            __state.macro_function_call = false;
-            auto &ident = __macro_idents.back();
             if (__state.last_param_cursor != last_cursor)
-                ident.real_params.emplace_back(
+                __macro_idents.back().real_params.emplace_back(
                     __state.last_param_cursor - start,
                     YYCURSOR - __state.last_param_cursor - 1,
                     __state.last_param_line, __state.line);
-            auto &macro = __macro_define_blocks[ident.macro_id];
-            auto _last_end = macro.body_start;
-            auto _last_type = MacroParamRefType::Normal;
-            for (auto &ref : macro.params_refs) {
-                auto &real = ident.real_params[ref.shape_param_id];
-                if (_last_end < ref.start)
-                    __state.macro_expand_queue.emplace(start + ref.start,
-                                                       start + real.start);
-                else if (__state.macro_expand_queue.size()) {
-                    __state.macro_expand_queue.back().next_expanded_start =
-                        start + real.start;
-                }
-                if (ref.type == MacroParamRefType::ToString) {
-                    if (__state.macro_expand_queue.size()) {
-                        __state.macro_expand_queue.back().next_expanded_start =
-                            _s + 1;
-                    }
-                    __state.macro_expand_queue.emplace(_s + 2,
-                                                       start + real.start);
-                    __state.macro_expand_queue.emplace(
-                        start + real.start + real.length, _s + 1);
-                    __state.macro_expand_queue.emplace(
-                        _s + 2, start + ref.start + ref.length);
-                } else {
-                    __state.macro_expand_queue.emplace(
-                        start + real.start + real.length,
-                        start + ref.start + ref.length);
-                    _last_end = ref.start + ref.length;
-                }
-                _last_type = ref.type;
-            }
-            if (_last_end < macro.start + macro.length ||
-                _last_end == macro.body_start)
-                __state.macro_expand_queue.emplace(
-                    start + macro.start + macro.length, YYCURSOR);
-            else {
-                __state.macro_expand_queue.back().next_expanded_start =
-                    YYCURSOR;
-            }
-            if (macro.params_refs.size())
-                if (auto &r = macro.params_refs.front();
-                    r.start == macro.body_start)
-                    pre_cursor =
-                        start + ident.real_params[r.shape_param_id].start;
-                else
-                    pre_cursor = start + macro.body_start;
-            else
-                pre_cursor = start + macro.body_start;
-
+            __expand_macro();
+            __state.macro_function_call = false;
             return NextAction::ReturnPreCorsur;
         }
         return NextAction::Continue;
@@ -492,6 +442,51 @@ IMPL_HANDLE(Other) {
         return NextAction::Continue;
     return NextAction::Break;
 }
+void PreCompiledLexer::__expand_macro() {
+    static const char *_s = " \"";
+    auto &ident = __macro_idents.back();
+    auto &macro = __macro_define_blocks[ident.macro_id];
+    auto _last_end = macro.body_start;
+    auto _last_type = MacroParamRefType::Normal;
+    for (auto &ref : macro.params_refs) {
+        auto &real = ident.real_params[ref.shape_param_id];
+        if (_last_end < ref.start)
+            __state.macro_expand_queue.emplace(start + ref.start,
+                                               start + real.start);
+        else if (__state.macro_expand_queue.size()) {
+            __state.macro_expand_queue.back().next_expanded_start =
+                start + real.start;
+        }
+        if (ref.type == MacroParamRefType::ToString) {
+            if (__state.macro_expand_queue.size()) {
+                __state.macro_expand_queue.back().next_expanded_start = _s + 1;
+            }
+            __state.macro_expand_queue.emplace(_s + 2, start + real.start);
+            __state.macro_expand_queue.emplace(start + real.start + real.length,
+                                               _s + 1);
+            __state.macro_expand_queue.emplace(_s + 2,
+                                               start + ref.start + ref.length);
+        } else {
+            __state.macro_expand_queue.emplace(start + real.start + real.length,
+                                               start + ref.start + ref.length);
+            _last_end = ref.start + ref.length;
+        }
+        _last_type = ref.type;
+    }
+    if (_last_end < macro.start + macro.length || _last_end == macro.body_start)
+        __state.macro_expand_queue.emplace(start + macro.start + macro.length,
+                                           YYCURSOR);
+    else {
+        __state.macro_expand_queue.back().next_expanded_start = YYCURSOR;
+    }
+    if (macro.params_refs.size())
+        if (auto &r = macro.params_refs.front(); r.start == macro.body_start)
+            pre_cursor = start + ident.real_params[r.shape_param_id].start;
+        else
+            pre_cursor = start + macro.body_start;
+    else
+        pre_cursor = start + macro.body_start;
+}
 
 PreCompiledLexer::PreCompiledLexer(const std::string *content)
     : __content(content),
@@ -613,4 +608,15 @@ loop_break:
     pre_cursor = last_cursor;
     last_cursor = YYCURSOR;
     return pre_cursor++;
+}
+std::pair<size_t, size_t> PreCompiledLexer::line_and_column(size_t pos) const {
+    size_t line_num = 1;
+    size_t column_num = 0;
+    for (size_t i = 0; i < pos && i < __line_index.size(); ++i) {
+        if (__line_index[i] <= pos) {
+            line_num++;
+            column_num = pos - __line_index[i];
+        }
+    }
+    return {line_num, column_num};
 }

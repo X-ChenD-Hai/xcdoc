@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "./string_slice_view.h"
+
 class PreCompiledLexer {
    public:
     struct PreCompiledBlock {
@@ -112,6 +114,7 @@ class PreCompiledLexer {
    private:
     template <TokenCode code>
     NextAction __handle();
+    void __expand_macro();
 
    private:
     const std::string *__content;
@@ -139,17 +142,7 @@ class PreCompiledLexer {
 
     // void parse();
     const char *next();
-    inline std::pair<size_t, size_t> line_and_column(size_t pos) const {
-        size_t line_num = 1;
-        size_t column_num = 0;
-        for (size_t i = 0; i < pos && i < __line_index.size(); ++i) {
-            if (__line_index[i] <= pos) {
-                line_num++;
-                column_num = pos - __line_index[i];
-            }
-        }
-        return {line_num, column_num};
-    }
+    std::pair<size_t, size_t> line_and_column(size_t pos) const;
     inline const std::vector<IncludeBlock> &include_blocks() const {
         return __include_blocks;
     }

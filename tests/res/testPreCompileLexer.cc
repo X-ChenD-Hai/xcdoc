@@ -12,5 +12,11 @@ AA;
 中行3(A2, zq22 dsfds dsaf);
 #define A()
 A()
+
+#define CH class q;
+#define HH(a, b) a##b
+
+HH(C, H)
+
 class Aaaa;
 class A中国;
