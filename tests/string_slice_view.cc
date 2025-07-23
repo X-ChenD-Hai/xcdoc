@@ -1,8 +1,7 @@
-#include "string_slice_view.h"
+#include <utils/public.h>
+#include <utils/string_slice_view.h>
 
 #include <string>
-
-#include "utils.h"
 
 using namespace std;
 

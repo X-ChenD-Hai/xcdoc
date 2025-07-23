@@ -1,9 +1,9 @@
 // re2c --lang c++
 #include <assert.h>
 
-#include "./MacroExpandMacroHelper.h"
-#include "./PreCompiledLexer.h"
-#include "utils.h"
+#include "CppParser/MacroExpandMacroHelper.h"
+#include "CppParser/PreCompiledLexer.h"
+#include "utils/public.h"
 
 /*!include:re2c "def.re" */
 

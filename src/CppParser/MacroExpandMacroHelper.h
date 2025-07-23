@@ -1,6 +1,6 @@
 #pragma once
-#include "./PreCompiledLexer.h"
-#include "./string_slice_view.h"
+#include "CppParser/PreCompiledLexer.h"
+#include "utils/string_slice_view.h"
 
 class PreCompiledLexer;
 class MacroExpandMacroHelper {

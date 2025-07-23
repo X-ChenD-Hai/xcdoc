@@ -1,7 +1,8 @@
+#include <CppParser/PreCompiledLexer.h>
+#include <utils/public.h>
+
 #include <string>
 
-#include "PreCompiledLexer.h"
-#include "utils.h"
 
 int main() {
     std::string ss{"12"};

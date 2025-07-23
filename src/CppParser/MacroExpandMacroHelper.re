@@ -1,6 +1,6 @@
 // re2c --lang c
-#include "./MacroExpandMacroHelper.h"
-#include "./utils.h"
+#include "CppParser/MacroExpandMacroHelper.h"
+#include "utils/public.h"
 /*!include:re2c "def.re" */
 
 bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
