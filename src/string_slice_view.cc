@@ -48,18 +48,18 @@ string_slice_view::iterator string_slice_view::iterator::operator+(
     return res;
 }
 string_slice_view::iterator &string_slice_view::iterator::operator+=(int n) {
-    while ((str += n) >= str_queue->operator[](offset).str +
-                             str_queue->operator[](offset).len) {
-        n -= (str_queue->operator[](offset).str +
-              str_queue->operator[](offset).len - str);
+    auto it = str_queue->begin() + offset;
+    while ((str + n) >= it->str + it->len) {
+        n -= (it->str + it->len - str);
         ++offset;
         if (offset < str_queue->size())
-            str = str_queue->operator[](offset).str;
+            str = (++it)->str;
         else {
             str = &__EOF;
             return *this;
         }
     }
+    str += n;
     return *this;
 }
 bool string_slice_view::iterator::operator==(const iterator &other) const {
@@ -79,10 +79,9 @@ void string_slice_view::push(std::string *str) {
 }
 void string_slice_view::push(iterator start, iterator end) {
     assert(!end.str_queue || start.str_queue == end.str_queue);
+    auto &q = *start.str_queue;
     while (start.offset < end.offset) {
-        size_t len =
-            start.str_queue->operator[](start.offset).len -
-            (start.str - start.str_queue->operator[](start.offset).str);
+        size_t len = q[start.offset].len - (start.str - q[start.offset].str);
         str_queue.emplace_back(start.str, len);
         start += len;
     }

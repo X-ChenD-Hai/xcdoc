@@ -63,7 +63,7 @@ class PreCompiledLexer {
         const char *limit;
         const char *next_expanded_start;
     };
-
+    enum class TokenCode;
     struct State {
         bool include_block : 1 = false;
         bool macro_define : 1 = false;
@@ -76,6 +76,8 @@ class PreCompiledLexer {
         bool condition_endif_line : 1 = false;
         bool macro_param_define : 1 = false;
         bool macro_function_call : 1 = false;
+        TokenCode last_token_code = TokenCode::Other;
+        const char *last_ident_ptr{nullptr};
         size_t line = 1;
         size_t parenthesis_count = 0;
         size_t last_param_line = 0;
@@ -87,6 +89,7 @@ class PreCompiledLexer {
     enum class NextAction { Continue, Break, ReturnPreCorsur };
     enum class TokenCode {
         Other,
+        Whitespace,
         If,
         Ifdef,
         Elif,

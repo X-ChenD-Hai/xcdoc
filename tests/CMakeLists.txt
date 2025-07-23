@@ -1,2 +1,4 @@
 add_executable(test_PreCompileLexer PreCompileLexer.cc)
 target_link_libraries(test_PreCompileLexer PRIVATE xcdoc_lib)
+add_executable(test_stringSliceView string_slice_view.cc)
+target_link_libraries(test_stringSliceView PRIVATE xcdoc_lib)

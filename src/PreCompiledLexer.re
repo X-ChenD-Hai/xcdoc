@@ -142,8 +142,12 @@ IMPL_HANDLE(Left_parenthesis) {
         __state.string)
         return NextAction::Continue;
     else if (__state.macro_define) {
-        __macro_define_blocks.back().is_function = true;
-        __state.macro_param_define = true;
+        if (__state.last_token_code == TokenCode::Ident &&
+            __state.last_ident_ptr ==
+                start + __macro_define_blocks.back().ident_start) {
+            __macro_define_blocks.back().is_function = true;
+            __state.macro_param_define = true;
+        }
         return NextAction::Continue;
     } else if (__state.macro_function_call) {
         if (++__state.parenthesis_count == 1) {
@@ -160,8 +164,11 @@ IMPL_HANDLE(Right_parenthesis) {
         __state.string)
         return NextAction::Continue;
     else if (__state.macro_define) {
-        __state.macro_param_define = false;
-        __macro_define_blocks.back().body_start = (size_t)(YYCURSOR - start);
+        if (__state.macro_param_define) {
+            __state.macro_param_define = false;
+            __macro_define_blocks.back().body_start =
+                (size_t)(YYCURSOR - start);
+        }
         return NextAction::Continue;
     } else if (__state.macro_function_call) {
         if (--__state.parenthesis_count == 0) {
@@ -245,6 +252,7 @@ IMPL_HANDLE(Ident_before_Double_hash) {
 IMPL_HANDLE(Ident) {
     FILTER_COMMENT
     auto ident = std::string_view(last_cursor, YYCURSOR - last_cursor);
+    __state.last_ident_ptr = last_cursor;
     if (__state.macro_define) {
         if (__macro_define_blocks.back().ident_length == 0) {
             __macro_define_blocks.back().ident_length =
@@ -472,15 +480,19 @@ const char *PreCompiledLexer::next() {
         return pre_cursor++;
     }
     for (;;) {
-#define HANDEL(code)                       \
-    switch (__handle<TokenCode::code>()) { \
-        case NextAction::Continue:         \
-            goto loop_continue;            \
-        case NextAction::Break:            \
-            goto loop_break;               \
-        case NextAction::ReturnPreCorsur:  \
-            return pre_cursor++;           \
-    }
+#define HANDEL(code)                               \
+    do {                                           \
+        auto tmp = __handle<TokenCode::code>();    \
+        __state.last_token_code = TokenCode::code; \
+        switch (tmp) {                             \
+            case NextAction::Continue:             \
+                goto loop_continue;                \
+            case NextAction::Break:                \
+                goto loop_break;                   \
+            case NextAction::ReturnPreCorsur:      \
+                return pre_cursor++;               \
+        }                                          \
+    } while (1)
         /*!re2c
             re2c:define:YYCTYPE = char;
             re2c:yyfill:enable = 0;
@@ -500,59 +512,58 @@ const char *PreCompiledLexer::next() {
                 HANDEL(Else);
             }
             "#" whitespace "endif"{
-                HANDEL(Endif)
+                HANDEL(Endif);
             }
             "#" whitespace "include" whitespace [<"] {
-                HANDEL(Include)
+                HANDEL(Include);
             }
             "#" whitespace "define" [ \t]+  {
-                HANDEL(Define)
+                HANDEL(Define);
             }
             whitespace "##" whitespace {
-                HANDEL(Double_hash)
+                HANDEL(Double_hash);
             }
             "#" whitespace {
-                HANDEL(Hash)
+                HANDEL(Hash);
             }
             "(" whitespace {
-                HANDEL(Left_parenthesis)
+                HANDEL(Left_parenthesis);
             }
             whitespace ")" {
-               HANDEL(Right_parenthesis)
+               HANDEL(Right_parenthesis);
             }
             whitespace "," whitespace {
-                HANDEL(Comma)
+                HANDEL(Comma);
             }
             ident {
-                HANDEL(Ident)
+                HANDEL(Ident);
             }
             ident whitespace "##" whitespace {
-                HANDEL(Ident_before_Double_hash)
+                HANDEL(Ident_before_Double_hash);
             }
-
             [/][*] {
-                HANDEL(Block_comment_start)
+                HANDEL(Block_comment_start);
              }
             [*][/] {
-                HANDEL(Block_comment_end)
+                HANDEL(Block_comment_end);
              }
              "R"["] [^\x00\t\n\r \\(]* "(" {
-                HANDEL(Native_string)
+                HANDEL(Native_string);
              }
             ["] {
-                HANDEL(Double_quotation_marks)
+                HANDEL(Double_quotation_marks);
             }
             "\\" {
-                HANDEL(Backslash)
+                HANDEL(Backslash);
                  }
             "//" {
-                HANDEL(Line_comment)
+                HANDEL(Line_comment);
              }
             [\x00\n] {
-                HANDEL(Eof)
+                HANDEL(Eof);
              }
             *      {
-                HANDEL(Other)
+                HANDEL(Other);
             }
         */
     loop_continue:

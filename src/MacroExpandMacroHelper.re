@@ -4,7 +4,6 @@
 /*!include:re2c "def.re" */
 
 bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
-    static auto __S = " \"";
     auto &macro = lexer->__macro_define_blocks[ident.macro_id];
     if (macro.start + macro.length == macro.body_start) return false;
 
@@ -14,11 +13,11 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
         auto &real = ident.real_params[ref.shape_param_id];
         str.push(_last_end, lexer->start + ref.start);
         if (ref.type == PreCompiledLexer::MacroParamRefType::ToString) {
-            str.push(__S + 1, 1);
-            string_slice_view ss(lexer->start + real.start, real.length);
-            handle_str_real(&ss);
-            str.push(ss);
-            str.push(__S + 1, 1);
+            if (ref.type == PreCompiledLexer::MacroParamRefType::ToString)
+                str.push(
+                    handle_str_real({lexer->start + real.start, real.length}));
+            else
+                str.push(lexer->start + real.start, real.length);
         } else {
             str.push(lexer->start + real.start, real.length);
         }
@@ -27,9 +26,9 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
     str.push(_last_end, lexer->start + macro.start + macro.length);
     OUT NV(str) ENDL;
 
-    last_cursor = YYMARKER = YYCURSOR = str.begin();
     do {
-        expand_macro(str);
+        expand_macro(&str);
+        last_cursor = YYMARKER = YYCURSOR = str.begin();
         for (;;) {
             /*!re2c
                 re2c:define:YYCTYPE = char;
@@ -54,7 +53,7 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
                     goto loop_continue;
                 }
                 [\x00]{
-                    goto warp_end;
+                    break;
                 }
                 * {
                     goto loop_continue;
@@ -63,9 +62,7 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
         loop_continue:
             last_cursor = YYCURSOR;
         }
-    warp_end:
     } while (macro_idents.size());
-    expand_macro(str);
     auto &q = lexer->__state.macro_expand_queue;
     auto &sq = str.string_refs();
     auto _last_cursor = lexer->YYCURSOR;
@@ -94,8 +91,9 @@ void MacroExpandMacroHelper::handle_ident() {
 }
 void MacroExpandMacroHelper::handle_right() {
     if (__state.macro_parma) {
-        if (--__state.quote_count == 0) {
-            macro_idents.back().real_parms.emplace_back(
+        if (--__state.parenthesis_count == 0) {
+            macro_idents.back().end = YYCURSOR;
+            macro_idents.back().real_params.emplace_back(
                 __state.last_param_start, last_cursor);
             __state.macro_parma = false;
         }
@@ -103,27 +101,55 @@ void MacroExpandMacroHelper::handle_right() {
 }
 void MacroExpandMacroHelper::handle_left() {
     if (__state.macro_parma) {
-        if (++__state.quote_count == 1) {
+        if (++__state.parenthesis_count == 1) {
             __state.last_param_start = YYCURSOR;
-            __state.last_param_start = last_cursor;
         }
     }
 }
 void MacroExpandMacroHelper::handle_comma() {
-    if (__state.quote_count == 1) {
-        macro_idents.back().real_parms.emplace_back(__state.last_param_start,
-                                                    last_cursor);
+    if (__state.parenthesis_count == 1) {
+        macro_idents.back().real_params.emplace_back(__state.last_param_start,
+                                                     last_cursor);
+        __state.last_param_start = YYCURSOR;
     }
 }
-void MacroExpandMacroHelper::expand_macro(string_slice_view &str) {
-    // TODO
+void MacroExpandMacroHelper::expand_macro(string_slice_view *str) {
+    if (macro_idents.empty()) return;
+    string_slice_view res;
+    auto last_start = str->begin();
+    for (auto &ident : macro_idents) {
+        res.push(last_start, ident.start);
+        OUT NV(res) ENDL;
+        last_start = ident.end;
+        auto &macro = lexer->__macro_define_blocks[ident.macro_id];
+        if (macro.start + macro.length == macro.body_start) continue;
+        auto _last_start = lexer->start + macro.body_start;
+        for (auto &ref : macro.params_refs) {
+            auto &real = ident.real_params[ref.shape_param_id];
+            res.push(_last_start, lexer->start + ref.start);
+            OUT NV(res) ENDL;
+            if (ref.type == PreCompiledLexer::MacroParamRefType::ToString)
+                res.push(handle_str_real({real.start, real.end}));
+            else
+                res.push(real.start, real.end);
+            OUT NV(res) ENDL;
+            _last_start = lexer->start + ref.start + ref.length;
+        }
+        res.push(_last_start, lexer->start + macro.start + macro.length);
+        OUT NV(res) ENDL;
+    }
+    res.push(last_start, str->end());
+    OUT SV(res - str, *str) ENDL;
+    OUT SV(res, res) ENDL;
+    *str = res;
     macro_idents.clear();
 }
-void MacroExpandMacroHelper::handle_str_real(string_slice_view *p) {
-    last_cursor = YYMARKER = YYCURSOR = p->begin();
-    string_slice_view::iterator ls = p->begin();
-    string_slice_view s;
-    static auto _S = " ";
+string_slice_view MacroExpandMacroHelper::handle_str_real(
+    const string_slice_view &p) {
+    last_cursor = YYMARKER = YYCURSOR = p.begin();
+    string_slice_view::iterator ls = p.begin();
+    static auto _S = " \"";
+    string_slice_view s(_S + 1, 1);
     for (;;) {
     /*!re2c
         * {
@@ -145,5 +171,6 @@ void MacroExpandMacroHelper::handle_str_real(string_slice_view *p) {
         }
      */}
     s.pop_back();
-    *p = s;
+    s.push(_S + 1, 1);
+    return s;
 };

@@ -5,10 +5,6 @@
 class PreCompiledLexer;
 class MacroExpandMacroHelper {
    private:
-    PreCompiledLexer *lexer;
-    string_slice_view::iterator YYCURSOR;
-    string_slice_view::iterator YYMARKER;
-    string_slice_view::iterator last_cursor;
     struct Parma {
         string_slice_view::iterator start;
         string_slice_view::iterator end;
@@ -17,12 +13,16 @@ class MacroExpandMacroHelper {
         string_slice_view::iterator start;
         string_slice_view::iterator end;
         size_t macro_id;
-        std::vector<Parma> real_parms;
+        std::vector<Parma> real_params;
     };
+    PreCompiledLexer *lexer;
+    string_slice_view::iterator YYCURSOR;
+    string_slice_view::iterator YYMARKER;
+    string_slice_view::iterator last_cursor;
     std::vector<Ident> macro_idents;
     struct {
         bool macro_parma{false};
-        long quote_count = 0;
+        long parenthesis_count = 0;
         string_slice_view::iterator last_param_start;
     } __state;
 
@@ -33,6 +33,6 @@ class MacroExpandMacroHelper {
     void handle_right();
     void handle_left();
     void handle_comma();
-    void handle_str_real(string_slice_view* p);
-    void expand_macro(string_slice_view &str);
+    string_slice_view handle_str_real(const string_slice_view &p);
+    void expand_macro(string_slice_view *str);
 };

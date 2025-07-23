@@ -56,5 +56,7 @@ class string_slice_view {
     inline const std::vector<StrRef> &string_refs() const { return str_queue; }
     iterator begin() const;
     iterator end() const;
+    inline std::string to_string() const { return std::string(begin(), end()); }
+    inline operator std::string() { return to_string(); }
 };
 std::ostream &operator<<(std::ostream &os, const string_slice_view &view);

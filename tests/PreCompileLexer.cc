@@ -32,9 +32,10 @@ int main() {
     }
     OUT VV("------ Macro define blocks:") ENDL;
     for (auto block : lexer.macro_define_blocks()) {
-        OUT NV(block.start) NV(block.length) NV(block.ident_start)
-            NV(block.ident_length) NV(block.body_start) NV(block.end_line)
-                SV(f, block.is_function) ENDL;
+        OUT SV(ident,
+               lexer.content().substr(block.ident_start, block.ident_length))
+            SV(s, block.start) SV(l, block.length) SV(bs, block.body_start)
+                SV(el, block.end_line) SV(f, block.is_function) ENDL;
         if (block.is_function) {
             for (size_t i = 0; i < block.params.size(); ++i) {
                 auto& p = block.params[i];
