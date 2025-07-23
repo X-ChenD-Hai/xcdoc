@@ -377,8 +377,15 @@ IMPL_HANDLE(Native_string) {
 }
 IMPL_HANDLE(Line_comment) {
     if (__state.block_comment || __state.line_comment || __state.string ||
-        __state.macro_define)
+        __state.macro_param_define)
         return NextAction::Continue;
+    if (__state.macro_define) {
+        ERR VV("End macro define") ENDL;
+        __macro_define_blocks.back().length =
+            (size_t)(YYCURSOR - start) - __macro_define_blocks.back().start - 2;
+        __macro_define_blocks.back().end_line = __state.line;
+        __state.macro_define = false;
+    }
     __state.line_comment = true;
     __line_comment_blocks.emplace_back(PreCompiledBlock{});
     __line_comment_blocks.back().start = (size_t)(YYMARKER - start);

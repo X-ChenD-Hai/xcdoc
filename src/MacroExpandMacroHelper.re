@@ -10,18 +10,21 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
     string_slice_view str;
     auto _last_end = lexer->start + macro.body_start;
     for (auto &ref : macro.params_refs) {
-        auto &real = ident.real_params[ref.shape_param_id];
         str.push(_last_end, lexer->start + ref.start);
-        if (ref.type == PreCompiledLexer::MacroParamRefType::ToString) {
-            if (ref.type == PreCompiledLexer::MacroParamRefType::ToString)
-                str.push(
-                    handle_str_real({lexer->start + real.start, real.length}));
-            else
-                str.push(lexer->start + real.start, real.length);
-        } else {
-            str.push(lexer->start + real.start, real.length);
-        }
         _last_end = lexer->start + ref.start + ref.length;
+        if (ref.shape_param_id < ident.real_params.size()) {
+            auto &real = ident.real_params[ref.shape_param_id];
+            if (ref.type == PreCompiledLexer::MacroParamRefType::ToString) {
+                if (ref.type == PreCompiledLexer::MacroParamRefType::ToString)
+                    str.push(handle_str_real(
+                        {lexer->start + real.start, real.length}));
+                else
+                    str.push(
+                        handle_real({lexer->start + real.start, real.length}));
+            } else {
+                str.push(lexer->start + real.start, real.length);
+            }
+        }
     }
     str.push(_last_end, lexer->start + macro.start + macro.length);
     OUT NV(str) ENDL;
@@ -62,6 +65,15 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
         loop_continue:
             last_cursor = YYCURSOR;
         }
+        OUT VV("Expanding ----") ENDL;
+        for (auto idt : macro_idents) {
+            OUT SV(idt, string_slice_view(idt.start, idt.end)) ENDL;
+            for (size_t i = 0; i < idt.real_params.size(); ++i) {
+                auto &real = idt.real_params[i];
+                OUT VV("\t") SV(id, i)
+                    SV(real, string_slice_view(real.start, real.end)) ENDL;
+            }
+        }
     } while (macro_idents.size());
     auto &q = lexer->__state.macro_expand_queue;
     auto &sq = str.string_refs();
@@ -79,6 +91,7 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
     return true;
 }
 void MacroExpandMacroHelper::handle_ident() {
+    if (__state.macro_parma) return;
     auto ident = std::string(last_cursor, YYCURSOR);
     if (auto it = lexer->macro_define_map().find(ident);
         it != lexer->macro_define_map().end()) {
@@ -92,9 +105,9 @@ void MacroExpandMacroHelper::handle_ident() {
 void MacroExpandMacroHelper::handle_right() {
     if (__state.macro_parma) {
         if (--__state.parenthesis_count == 0) {
-            macro_idents.back().end = YYCURSOR;
             macro_idents.back().real_params.emplace_back(
                 __state.last_param_start, last_cursor);
+            macro_idents.back().end = YYCURSOR;
             __state.macro_parma = false;
         }
     }
@@ -125,15 +138,19 @@ void MacroExpandMacroHelper::expand_macro(string_slice_view *str) {
         if (macro.start + macro.length == macro.body_start) continue;
         auto _last_start = lexer->start + macro.body_start;
         for (auto &ref : macro.params_refs) {
-            auto &real = ident.real_params[ref.shape_param_id];
             res.push(_last_start, lexer->start + ref.start);
             OUT NV(res) ENDL;
-            if (ref.type == PreCompiledLexer::MacroParamRefType::ToString)
-                res.push(handle_str_real({real.start, real.end}));
-            else
-                res.push(real.start, real.end);
-            OUT NV(res) ENDL;
             _last_start = lexer->start + ref.start + ref.length;
+            OUT NV(ref.shape_param_id) NV(ident.real_params.size()) ENDL;
+            if (ref.shape_param_id < ident.real_params.size()) {
+                auto &real = ident.real_params[ref.shape_param_id];
+                OUT SV(real, string_slice_view(real.start, real.end)) ENDL;
+                if (ref.type == PreCompiledLexer::MacroParamRefType::ToString)
+                    res.push(handle_str_real({real.start, real.end}));
+                else
+                    res.push(handle_real({real.start, real.end}));
+                OUT NV(res) ENDL;
+            }
         }
         res.push(_last_start, lexer->start + macro.start + macro.length);
         OUT NV(res) ENDL;
@@ -144,19 +161,23 @@ void MacroExpandMacroHelper::expand_macro(string_slice_view *str) {
     *str = res;
     macro_idents.clear();
 }
-string_slice_view MacroExpandMacroHelper::handle_str_real(
+string_slice_view MacroExpandMacroHelper::handle_real(
     const string_slice_view &p) {
     last_cursor = YYMARKER = YYCURSOR = p.begin();
     string_slice_view::iterator ls = p.begin();
-    static auto _S = " \"";
-    string_slice_view s(_S + 1, 1);
+    static auto _S = " ";
+    string_slice_view s;
     for (;;) {
     /*!re2c
         * {
             last_cursor = YYCURSOR;
             continue;
         }
-        ([\n \t\v]|[\\][\n])+ {
+        (str)+ {
+            last_cursor = YYCURSOR;
+            continue;
+        }
+        (line_comment|block_comment|whitespace_with_line)+ {
             s.push(ls, last_cursor);
             s.push(_S, 1);
             last_cursor = YYCURSOR;
@@ -171,6 +192,16 @@ string_slice_view MacroExpandMacroHelper::handle_str_real(
         }
      */}
     s.pop_back();
-    s.push(_S + 1, 1);
+    return s;
+}
+
+string_slice_view MacroExpandMacroHelper::handle_str_real(
+    const string_slice_view &p) {
+    last_cursor = YYMARKER = YYCURSOR = p.begin();
+    string_slice_view::iterator ls = p.begin();
+    static auto _S = "\"";
+    string_slice_view s(_S, 1);
+    s.push(handle_real(p));
+    s.push(_S, 1);
     return s;
 };

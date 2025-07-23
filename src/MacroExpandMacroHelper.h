@@ -34,5 +34,6 @@ class MacroExpandMacroHelper {
     void handle_left();
     void handle_comma();
     string_slice_view handle_str_real(const string_slice_view &p);
+    string_slice_view handle_real(const string_slice_view &p);
     void expand_macro(string_slice_view *str);
 };

@@ -7,5 +7,8 @@
     _str1 = ["] ([\\]["]|[^\x00])* ["];
     _str2 = [R]["] ident? "(" [^\x00]* ")" ident? ["];
     str = _str1|_str2;
+    block_comment = [/][*] [^\x00]* [*][/];
+    line_comment = "//" ([\\][\n]|[^\x00\n])* [\n];
+    whitespace_with_line =([\n \r\f\t\v]|[\\][\n])+;
     // str = ["] (([\\]["])|[^\x00])* ["];
 */

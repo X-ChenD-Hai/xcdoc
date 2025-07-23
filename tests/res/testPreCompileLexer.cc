@@ -9,14 +9,21 @@ AA;
 #define 中行2(a, bc) class a##c##bc;
 中行2(A2, q22);
 #define 中行3(a, b) auto a = #b "123";
-中行3(A2, (zq2\2 dsf, ds dsaf));
+中行3(A2, zq2\2 dsf ds dsaf);
 #define A(a)
 A(a)
-#define AAM(a, b) auto a = #b;
+#define AAM(a, b) auto a = #b  // asdsdf
 #define aad(a, b, c) AA##a(b, c)
 #define HH(a, b, c) aad(a, b, c)
 
-HH(M, D, Z);
+HH(M, // qqsad \
+    sdf
+     D,
+      Z //HH
+    /* safd */  A
+       A
+    //
+    );
 
 class Aaaa;
 class A中国;
