@@ -1,6 +1,7 @@
 // re2c --lang c++
 #include <assert.h>
 
+#include "./MacroExpandMacroHelper.h"
 #include "./PreCompiledLexer.h"
 #include "utils.h"
 
@@ -169,9 +170,10 @@ IMPL_HANDLE(Right_parenthesis) {
                     __state.last_param_cursor - start,
                     YYCURSOR - __state.last_param_cursor - 1,
                     __state.last_param_line, __state.line);
-            __expand_macro();
             __state.macro_function_call = false;
-            return NextAction::ReturnPreCorsur;
+            if (MacroExpandMacroHelper(this).parser(__macro_idents.back())) {
+                return NextAction::ReturnPreCorsur;
+            }
         }
         return NextAction::Continue;
     }
@@ -289,11 +291,10 @@ IMPL_HANDLE(Ident) {
             __state.macro_function_call = true;
             return NextAction::Continue;
         } else {
-            __state.macro_expand_queue.emplace(
-                start + block.start + block.length, YYCURSOR);
-            pre_cursor = start + block.body_start;
-            last_cursor = pre_cursor;
-            return NextAction::ReturnPreCorsur;
+            if (MacroExpandMacroHelper(this).parser(__macro_idents.back())) {
+                return NextAction::ReturnPreCorsur;
+            }
+            return NextAction::Continue;
         }
     }
     FILTER_COMMENT
@@ -442,51 +443,6 @@ IMPL_HANDLE(Other) {
         return NextAction::Continue;
     return NextAction::Break;
 }
-void PreCompiledLexer::__expand_macro() {
-    static const char *_s = " \"";
-    auto &ident = __macro_idents.back();
-    auto &macro = __macro_define_blocks[ident.macro_id];
-    auto _last_end = macro.body_start;
-    auto _last_type = MacroParamRefType::Normal;
-    for (auto &ref : macro.params_refs) {
-        auto &real = ident.real_params[ref.shape_param_id];
-        if (_last_end < ref.start)
-            __state.macro_expand_queue.emplace(start + ref.start,
-                                               start + real.start);
-        else if (__state.macro_expand_queue.size()) {
-            __state.macro_expand_queue.back().next_expanded_start =
-                start + real.start;
-        }
-        if (ref.type == MacroParamRefType::ToString) {
-            if (__state.macro_expand_queue.size()) {
-                __state.macro_expand_queue.back().next_expanded_start = _s + 1;
-            }
-            __state.macro_expand_queue.emplace(_s + 2, start + real.start);
-            __state.macro_expand_queue.emplace(start + real.start + real.length,
-                                               _s + 1);
-            __state.macro_expand_queue.emplace(_s + 2,
-                                               start + ref.start + ref.length);
-        } else {
-            __state.macro_expand_queue.emplace(start + real.start + real.length,
-                                               start + ref.start + ref.length);
-            _last_end = ref.start + ref.length;
-        }
-        _last_type = ref.type;
-    }
-    if (_last_end < macro.start + macro.length || _last_end == macro.body_start)
-        __state.macro_expand_queue.emplace(start + macro.start + macro.length,
-                                           YYCURSOR);
-    else {
-        __state.macro_expand_queue.back().next_expanded_start = YYCURSOR;
-    }
-    if (macro.params_refs.size())
-        if (auto &r = macro.params_refs.front(); r.start == macro.body_start)
-            pre_cursor = start + ident.real_params[r.shape_param_id].start;
-        else
-            pre_cursor = start + macro.body_start;
-    else
-        pre_cursor = start + macro.body_start;
-}
 
 PreCompiledLexer::PreCompiledLexer(const std::string *content)
     : __content(content),
@@ -528,8 +484,6 @@ const char *PreCompiledLexer::next() {
         /*!re2c
             re2c:define:YYCTYPE = char;
             re2c:yyfill:enable = 0;
-            whitespace = [ \t]*;
-            ident     = ident_;
             "#" whitespace "if"{
                 HANDEL(If);
             }

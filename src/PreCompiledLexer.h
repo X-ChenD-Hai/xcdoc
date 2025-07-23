@@ -5,9 +5,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "./string_slice_view.h"
-
 class PreCompiledLexer {
+    friend class MacroExpandMacroHelper;
+
    public:
     struct PreCompiledBlock {
         size_t start{0};
@@ -114,7 +114,6 @@ class PreCompiledLexer {
    private:
     template <TokenCode code>
     NextAction __handle();
-    void __expand_macro();
 
    private:
     const std::string *__content;

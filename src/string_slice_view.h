@@ -4,13 +4,11 @@
 #include <iostream>
 #include <vector>
 class string_slice_view {
+   public:
     struct StrRef {
         const char *str;
         size_t len;
     };
-    std::vector<StrRef> str_queue;
-
-   public:
     class iterator {
         friend class string_slice_view;
         constexpr static const char __EOF = '\x00';
@@ -31,8 +29,16 @@ class string_slice_view {
         bool operator==(const iterator &other) const;
     };
 
+   private:
+    std::vector<StrRef> str_queue;
+
    public:
+    string_slice_view() {}
+    string_slice_view(iterator start, iterator end) { push(start, end); }
     void push(const char *str, size_t len);
+    inline void push(const char *start, const char *end) {
+        push(start, end - start);
+    }
     void push(const std::string &str);
     void push(iterator start, iterator end);
     void push(const string_slice_view &other);
@@ -43,7 +49,7 @@ class string_slice_view {
     iterator earse(iterator start, iterator end);
     void replace(const iterator &start, const iterator &end,
                  const iterator &new_start, const iterator &new_end);
-
+    inline const std::vector<StrRef> &string_refs() const { return str_queue; }
     iterator begin() const;
     iterator end() const;
 };

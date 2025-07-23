@@ -15,8 +15,7 @@ string_slice_view::iterator &string_slice_view::iterator::operator=(
 const char &string_slice_view::iterator::operator*() const { return *str; }
 string_slice_view::iterator &string_slice_view::iterator::operator++() {
     if (offset == str_queue->size()) return *this;
-    auto it = str_queue->begin() + offset;
-    if (++str >= it->str + it->len) {
+    if (auto it = str_queue->begin() + offset; ++str >= it->str + it->len) {
         ++offset;
         if (offset < str_queue->size())
             str = str_queue->operator[](offset).str;

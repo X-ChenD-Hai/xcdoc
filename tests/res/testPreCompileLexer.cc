@@ -10,8 +10,8 @@ AA;
 中行2(A2, q22);
 #define 中行3(a, b) auto a = #b "123";
 中行3(A2, zq22 dsfds dsaf);
-#define A()
-A()
+#define A(a)
+A(a)
 
 #define CH class q;
 #define HH(a, b) a##b
