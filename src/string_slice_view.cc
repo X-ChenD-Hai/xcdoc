@@ -74,8 +74,8 @@ void string_slice_view::push(const char *str, size_t len) {
         str = str_queue.front().str;
     }
 }
-void string_slice_view::push(const std::string &str) {
-    push(str.data(), str.size());
+void string_slice_view::push(std::string *str) {
+    push(str->data(), str->size());
 }
 void string_slice_view::push(iterator start, iterator end) {
     assert(!end.str_queue || start.str_queue == end.str_queue);
@@ -167,4 +167,11 @@ std::ostream &operator<<(std::ostream &os, const string_slice_view &view) {
         os << it;
     }
     return os;
+}
+void string_slice_view::pop_back() {
+    if (str_queue.back().len > 1) {
+        --str_queue.back().len;
+    } else {
+        str_queue.pop_back();
+    }
 }

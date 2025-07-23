@@ -9,7 +9,9 @@ AA;
 #define 中行2(a, bc) class a##c##bc;
 中行2(A2, q22);
 #define 中行3(a, b) auto a = #b "123";
-中行3(A2, zq22 dsfds dsaf);
+中行3(A2, (zq2\2 \
+    dsf    ,  ds 
+    dsaf)          );
 #define A(a)
 A(a)
 

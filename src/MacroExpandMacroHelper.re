@@ -15,7 +15,9 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
         str.push(_last_end, lexer->start + ref.start);
         if (ref.type == PreCompiledLexer::MacroParamRefType::ToString) {
             str.push(__S + 1, 1);
-            str.push(lexer->start + real.start, real.length);
+            string_slice_view ss(lexer->start + real.start, real.length);
+            handle_str_real(&ss);
+            str.push(ss);
             str.push(__S + 1, 1);
         } else {
             str.push(lexer->start + real.start, real.length);
@@ -117,16 +119,31 @@ void MacroExpandMacroHelper::expand_macro(string_slice_view &str) {
     // TODO
     macro_idents.clear();
 }
-string_slice_view MacroExpandMacroHelper::handle_str_real(
-    string_slice_view &p) {
-    string_slice_view res;
-    last_cursor = YYMARKER = YYCURSOR = p.begin();
-    // TODO
+void MacroExpandMacroHelper::handle_str_real(string_slice_view *p) {
+    last_cursor = YYMARKER = YYCURSOR = p->begin();
+    string_slice_view::iterator ls = p->begin();
+    string_slice_view s;
+    static auto _S = " ";
     for (;;) {
     /*!re2c
-        [\\\n] {}
-        * { continue; }
-        [\x00] {}
+        * {
+            last_cursor = YYCURSOR;
+            continue;
+        }
+        ([\n \t\v]|[\\][\n])+ {
+            s.push(ls, last_cursor);
+            s.push(_S, 1);
+            last_cursor = YYCURSOR;
+            ls = YYCURSOR;
+            continue;
+        }
+        [\x00] {
+            if(ls!=last_cursor){
+                s.push(ls, last_cursor);
+                s.push(_S, 1);}
+            break;
+        }
      */}
-    return res;
+    s.pop_back();
+    *p = s;
 };

@@ -35,13 +35,17 @@ class string_slice_view {
    public:
     string_slice_view() {}
     string_slice_view(iterator start, iterator end) { push(start, end); }
+    string_slice_view(const char *str, size_t len) { push(str, len); }
+    string_slice_view(const char *start, const char *end) { push(start, end); }
+    string_slice_view(std::string *str) { push(str); }
     void push(const char *str, size_t len);
     inline void push(const char *start, const char *end) {
         push(start, end - start);
     }
-    void push(const std::string &str);
+    void push(std::string *str);
     void push(iterator start, iterator end);
     void push(const string_slice_view &other);
+    void pop_back();
     void insert(const iterator &pos, iterator start, const iterator &end);
     void insert(size_t pos, iterator start, const iterator &end);
     void insert(size_t pos, const string_slice_view &other);
