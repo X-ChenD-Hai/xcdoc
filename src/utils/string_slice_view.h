@@ -45,6 +45,7 @@ class string_slice_view {
     void push(std::string *str);
     void push(iterator start, iterator end);
     void push(const string_slice_view &other);
+    void push_char(const char *c) { push(c, 1); }
     void pop_back();
     void insert(const iterator &pos, iterator start, const iterator &end);
     void insert(size_t pos, iterator start, const iterator &end);

@@ -69,6 +69,13 @@ bool string_slice_view::iterator::operator==(const iterator &other) const {
 }
 void string_slice_view::push(const char *str, size_t len) {
     if (len == 0) return;
+    if (str_queue.size()) {
+        auto &b = str_queue.back();
+        if (b.str + b.len == str) {
+            b.len += len;
+            return;
+        }
+    }
     str_queue.push_back({str, static_cast<unsigned int>(len)});
     if (str_queue.size() == 1) {
         str = str_queue.front().str;
