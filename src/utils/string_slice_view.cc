@@ -96,9 +96,10 @@ void string_slice_view::push(const string_slice_view &other) {
 void string_slice_view::insert(const iterator &pos, iterator start,
                                const iterator &end) {
     string_slice_view tmp;
-    auto it = str_queue.begin() + pos.offset;
     tmp.push(start, end);
-    if (pos.str != it->str) {
+    auto it = str_queue.end();
+    if (pos.offset < str_queue.size()) {
+        it = str_queue.begin() + pos.offset;
         tmp.str_queue.emplace_back(pos.str, it->len - (pos.str - it->str));
         it->len = pos.str - it->str - 1;
         ++it;
@@ -118,6 +119,7 @@ void string_slice_view::insert(const iterator &pos,
 }
 string_slice_view::iterator string_slice_view::earse(iterator start,
                                                      iterator end) {
+    if (start == end) return end;
     auto it = str_queue.begin() + start.offset;
 
     if (auto l = end.offset - start.offset; l == 0) {
@@ -132,6 +134,10 @@ string_slice_view::iterator string_slice_view::earse(iterator start,
             it = str_queue.insert(it, {pre_s, pre_len});
             ++end.offset;
         }
+    } else if (end.offset == str_queue.size()) {
+        it->len = start.str - it->str;
+        str_queue.erase(it + 1, str_queue.end());
+        end = this->end();
     } else {
         it->len = start.str - it->str;
         if (it->len)
