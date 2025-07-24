@@ -5,6 +5,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include "utils/string_slice_view.h"
+
+class CompileUnit;
+
 class PreCompiledLexer {
     friend class MacroExpandMacroHelper;
 
@@ -126,6 +130,9 @@ class PreCompiledLexer {
     const char *limit = YYCURSOR + __content->size();
     const char *pre_cursor;
     const std::string *__content;
+    CompileUnit *__compile_unit{nullptr};
+    std::vector<PreCompiledLexer *> __include_lexers;
+    string_slice_view __source;
     std::unordered_map<std::string_view, size_t> __macro_define_map;
     std::vector<IncludeBlock> __include_blocks;
     std::vector<MacroDefineBlock> __macro_define_blocks;
@@ -138,7 +145,8 @@ class PreCompiledLexer {
     State __state;
 
    public:
-    PreCompiledLexer(const std::string *content);
+    PreCompiledLexer(const std::string *content,
+                     CompileUnit *compile_unit = nullptr);
 
     // void parse();
     const char *next();
@@ -177,4 +185,5 @@ class PreCompiledLexer {
         }
         return tmp;
     }
+    const string_slice_view &source();
 };

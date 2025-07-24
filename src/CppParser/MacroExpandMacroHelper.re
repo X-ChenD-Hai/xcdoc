@@ -1,5 +1,6 @@
 // re2c --lang c
 #include "CppParser/MacroExpandMacroHelper.h"
+#undef __xcdoc_debug__
 #include "utils/public.h"
 /*!include:re2c "def.re" */
 

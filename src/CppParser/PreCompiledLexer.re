@@ -1,8 +1,10 @@
 // re2c --lang c++
 #include <assert.h>
 
+#include "CppParser/CompileUnit.h"
 #include "CppParser/MacroExpandMacroHelper.h"
 #include "CppParser/PreCompiledLexer.h"
+#undef __xcdoc_debug__
 #include "utils/public.h"
 
 /*!include:re2c "def.re" */
@@ -113,6 +115,11 @@ IMPL_HANDLE(Include) {
             return NextAction::Break;
         }
         __include_blocks.back().include_path = std::string(YYCURSOR, en);
+        if (__compile_unit) {
+            auto p = __compile_unit->attach_lexer(
+                __include_blocks.back().include_path);
+            if (p) __include_lexers.push_back(p);
+        }
         __include_blocks.back().length =
             (size_t)(en - __include_blocks.back().start);
         YYCURSOR = en + 1;
@@ -443,7 +450,10 @@ IMPL_HANDLE(Eof) {
         __state.macro_define = false;
     }
 end_line:
-    if (*(YYCURSOR - 1) == 0) return NextAction::Break;
+    if (*(YYCURSOR - 1) == 0) {
+        --YYCURSOR;
+        return NextAction::Break;
+    }
     return NextAction::Continue;
 }
 IMPL_HANDLE(Other) {
@@ -454,13 +464,14 @@ IMPL_HANDLE(Other) {
     return NextAction::Break;
 }
 
-PreCompiledLexer::PreCompiledLexer(const std::string *content)
+PreCompiledLexer::PreCompiledLexer(const std::string *content, CompileUnit *c)
     : __content(content),
       start(content->c_str()),
       YYCURSOR(content->c_str()),
       pre_cursor(YYCURSOR),
       YYMARKER(YYCURSOR),
       last_cursor(YYCURSOR),
+      __compile_unit(c),
       limit(YYCURSOR + content->size()) {
     // parse();
 }
@@ -586,4 +597,11 @@ std::pair<size_t, size_t> PreCompiledLexer::line_and_column(size_t pos) const {
         }
     }
     return {line_num, column_num};
+}
+const string_slice_view &PreCompiledLexer::source() {
+    const char *_next;
+    while (*(_next = next()) != 0) {
+        __source.push_char(_next);
+    }
+    return __source;
 }
