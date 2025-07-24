@@ -5,12 +5,12 @@ add_compile_definitions(XCDOC_TESTS_RESOURCES_DIR="${TESTS_RESOURCE_DIR}/")
 link_libraries(xcdoc_lib ${TEST_LIBS})
 
 add_executable(test_utils
-    string_slice_view.cc
+    utils/string_slice_view.cc
 )
 add_executable(test_CppParser
-    CppParser.cc
-    CommandParser.cc
-    PreCompileLexer.cc
+    CppParser/CppParser.cc
+    CppParser/CommandParser.cc
+    CppParser/PreCompileLexer.cc
 )
 add_test(NAME utils.all COMMAND test_utils)
 add_test(NAME utils.string_slice_view COMMAND test_utils --gtest_filter=string_slice_view.*)
