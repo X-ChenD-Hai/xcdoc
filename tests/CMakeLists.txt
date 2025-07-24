@@ -3,6 +3,9 @@ set(TEST_LIBS GTest::gtest GTest::gtest_main)
 set(TESTS_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/res)
 add_compile_definitions(XCDOC_TESTS_RESOURCES_DIR="${TESTS_RESOURCE_DIR}/")
 link_libraries(xcdoc_lib ${TEST_LIBS})
+include(${CMAKE_SOURCE_DIR}/cmake/test_res_generator.cmake)
+generate_test_res(${TESTS_RESOURCE_DIR} gen_dirs)
+message(STATUS "Gendirs: ${gen_dirs}")
 
 add_executable(test_utils
     utils/string_slice_view.cc

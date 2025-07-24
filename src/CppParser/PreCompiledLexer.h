@@ -186,4 +186,5 @@ class PreCompiledLexer {
         return tmp;
     }
     const string_slice_view &source();
+    const string_slice_view &source() const { return __source; };
 };
