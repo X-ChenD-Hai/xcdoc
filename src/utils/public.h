@@ -1,6 +1,5 @@
 #pragma once
-#include <fstream>
-#include <iostream>
+#include <iostream>  // IWYU pragma: keep
 #include <string>
 
 #ifdef __xcdoc_debug__
@@ -22,15 +21,7 @@
 #define VV(v)
 #define ENDL
 #endif
-namespace utiles {
-inline std::string read_file(const std::string &filename) {
-    std::ifstream ifs(filename);
-    if (!ifs) {
-        ERR VV("Failed to open file: ") VV(filename) ENDL;
-        return "";
-    }
-    std::string content((std::istreambuf_iterator<char>(ifs)),
-                        std::istreambuf_iterator<char>());
-    return content;
-}
-}  // namespace utiles
+namespace utils {
+std::string read_file(const std::string &filename);
+std::string unquote(std::string_view raw);
+}  // namespace utils

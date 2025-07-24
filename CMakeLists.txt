@@ -7,6 +7,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(__xcdoc_debug__)
 endif()
 include(cmake/re2c.cmake)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 option(BUILD_TESTING "Build tests" ON)
 add_subdirectory(src)
