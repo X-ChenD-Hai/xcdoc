@@ -11,6 +11,7 @@
 using json = nlohmann::json;
 CompileUnit::CompileUnit(const std::string& command) : __command(command) {
     auto parser = CommandParser::parse(__command);
+    OUT SV(command, __command) ENDL;
     namespace fs = std::filesystem;
     if (parser) {
         __source_file = parser->input_files().front();
