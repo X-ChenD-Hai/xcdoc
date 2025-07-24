@@ -5,28 +5,26 @@
 
 bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
     auto &macro = lexer->__macro_define_blocks[ident.macro_id];
-    if (macro.start + macro.length == macro.body_start) return false;
+    if (macro.length == macro.body_start) return false;
 
     string_slice_view str;
-    auto _last_end = lexer->start + macro.body_start;
+    auto _last_end = macro.start + macro.body_start;
     for (auto &ref : macro.params_refs) {
-        str.push(_last_end, lexer->start + ref.start);
-        _last_end = lexer->start + ref.start + ref.length;
+        str.push(_last_end, ref.start);
+        _last_end = ref.start + ref.length;
         if (ref.shape_param_id < ident.real_params.size()) {
             auto &real = ident.real_params[ref.shape_param_id];
             if (ref.type == PreCompiledLexer::MacroParamRefType::ToString) {
                 if (ref.type == PreCompiledLexer::MacroParamRefType::ToString)
-                    str.push(handle_str_real(
-                        {lexer->start + real.start, real.length}));
+                    str.push(handle_str_real({real.start, real.length}));
                 else
-                    str.push(
-                        handle_real({lexer->start + real.start, real.length}));
+                    str.push(handle_real({real.start, real.length}));
             } else {
-                str.push(lexer->start + real.start, real.length);
+                str.push(real.start, real.length);
             }
         }
     }
-    str.push(_last_end, lexer->start + macro.start + macro.length);
+    str.push(_last_end, macro.start + macro.length);
     OUT NV(str) ENDL;
 
     do {
@@ -135,12 +133,12 @@ void MacroExpandMacroHelper::expand_macro(string_slice_view *str) {
         OUT NV(res) ENDL;
         last_start = ident.end;
         auto &macro = lexer->__macro_define_blocks[ident.macro_id];
-        if (macro.start + macro.length == macro.body_start) continue;
-        auto _last_start = lexer->start + macro.body_start;
+        if (macro.length == macro.body_start) continue;
+        auto _last_start = macro.start + macro.body_start;
         for (auto &ref : macro.params_refs) {
-            res.push(_last_start, lexer->start + ref.start);
+            res.push(_last_start, ref.start);
             OUT NV(res) ENDL;
-            _last_start = lexer->start + ref.start + ref.length;
+            _last_start = ref.start + ref.length;
             OUT NV(ref.shape_param_id) NV(ident.real_params.size()) ENDL;
             if (ref.shape_param_id < ident.real_params.size()) {
                 auto &real = ident.real_params[ref.shape_param_id];
@@ -152,7 +150,7 @@ void MacroExpandMacroHelper::expand_macro(string_slice_view *str) {
                 OUT NV(res) ENDL;
             }
         }
-        res.push(_last_start, lexer->start + macro.start + macro.length);
+        res.push(_last_start, macro.start + macro.length);
         OUT NV(res) ENDL;
     }
     res.push(last_start, str->end());

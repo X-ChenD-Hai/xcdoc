@@ -26,31 +26,31 @@ TEST(PreCompiledLexer, all) {
 
     OUT VV("------ Include blocks:") ENDL;
     for (auto header : lexer.include_blocks()) {
-        OUT NV(header.start) NV(header.length) NV(header.include_path)
-            NV(header.start_line) NV(header.end_line) ENDL;
+        OUT NV(lexer.pos(header.start)) NV(header.length)
+            NV(header.include_path) NV(header.start_line) NV(header.end_line)
+                ENDL;
     }
     OUT VV("------ Macro define blocks:") ENDL;
     for (auto block : lexer.macro_define_blocks()) {
         OUT SV(ident,
                lexer.content().substr(block.ident_start, block.ident_length))
-            SV(s, block.start) SV(l, block.length) SV(bs, block.body_start)
-                SV(el, block.end_line) SV(f, block.is_function) ENDL;
+            SV(s, lexer.pos(block.start)) SV(l, block.length)
+                SV(bs, block.body_start) SV(el, block.end_line)
+                    SV(f, block.is_function) ENDL;
         if (block.is_function) {
             for (size_t i = 0; i < block.params.size(); ++i) {
                 auto& p = block.params[i];
-                OUT VV("\t")
-                    SV(pname, lexer.content().substr(p.start, p.length)) ENDL;
+                OUT VV("\t") SV(pname, string(p.start, p.length)) ENDL;
                 for (auto& r : block.params_refs) {
                     if (r.shape_param_id == i) {
-                        OUT VV("\t\tref: ") NV(r.start) NV(r.length) SV(
-                            type,
-                            r.type ==
-                                    PreCompiledLexer::MacroParamRefType::Normal
-                                ? "Normal"
-                            : r.type ==
-                                    PreCompiledLexer::MacroParamRefType::Concat
-                                ? "Concat"
-                                : "ToString") ENDL;
+                        OUT VV("\t\tref: ") NV(lexer.pos(r.start)) NV(r.length)
+                            SV(type, r.type == PreCompiledLexer::
+                                                   MacroParamRefType::Normal
+                                         ? "Normal"
+                                     : r.type == PreCompiledLexer::
+                                                     MacroParamRefType::Concat
+                                         ? "Concat"
+                                         : "ToString") ENDL;
                     }
                 }
             }
@@ -58,17 +58,17 @@ TEST(PreCompiledLexer, all) {
     }
     OUT VV("------ String blocks:") ENDL;
     for (auto block : lexer.string_blocks()) {
-        OUT NV(block.start) NV(block.length) NV(block.start_line)
+        OUT NV(lexer.pos(block.start)) NV(block.length) NV(block.start_line)
             NV(block.end_line) ENDL;
     }
     OUT VV("------ Line comment blocks:") ENDL;
     for (auto block : lexer.line_comment_blocks()) {
-        OUT NV(block.start) NV(block.length) NV(block.start_line)
+        OUT NV(lexer.pos(block.start)) NV(block.length) NV(block.start_line)
             NV(block.end_line) ENDL;
     }
     OUT VV("------ Block comment blocks:") ENDL;
     for (auto block : lexer.block_comment_blocks()) {
-        OUT NV(block.start) NV(block.length) NV(block.start_line)
+        OUT NV(lexer.pos(block.start)) NV(block.length) NV(block.start_line)
             NV(block.end_line) ENDL;
     }
     OUT VV("------ Macro define map:") ENDL;
@@ -77,10 +77,9 @@ TEST(PreCompiledLexer, all) {
     }
     OUT VV("------ Macro Identifiers:") ENDL;
     for (auto& i : lexer.macro_idents()) {
-        OUT NV(i.start) NV(i.length) NV(i.line) NV(i.macro_id) ENDL;
+        OUT NV(lexer.pos(i.start)) NV(i.length) NV(i.line) NV(i.macro_id) ENDL;
         for (auto& p : i.real_params) {
-            OUT VV("\t") SV(pname, lexer.content().substr(p.start, p.length))
-                ENDL;
+            OUT VV("\t") SV(pname, string(p.start, p.length)) ENDL;
         }
     }
     OUT VV("------ Macro Conditions:") ENDL;

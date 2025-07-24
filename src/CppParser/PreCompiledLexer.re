@@ -20,10 +20,10 @@ IMPL_HANDLE(If) {
     FILTER_COMMENT
     __state.condition_line = true;
     ConditonBlock condition_block{};
-    condition_block.start = last_cursor - start;
+    condition_block.start = last_cursor;
     condition_block.start_line = __state.line;
     ConditonItemBlock condition_item_block{};
-    condition_item_block.start = last_cursor - start;
+    condition_item_block.start = last_cursor;
     condition_item_block.start_line = __state.line;
     condition_block.blocks.push_back(condition_item_block);
     __state.condition_block_stack.push(condition_block);
@@ -33,10 +33,10 @@ IMPL_HANDLE(Ifdef) {
     FILTER_COMMENT
     __state.condition_line = true;
     ConditonBlock condition_block{};
-    condition_block.start = last_cursor - start;
+    condition_block.start = last_cursor;
     condition_block.start_line = __state.line;
     ConditonItemBlock condition_item_block{};
-    condition_item_block.start = last_cursor - start;
+    condition_item_block.start = last_cursor;
     condition_item_block.start_line = __state.line;
     condition_block.blocks.push_back(condition_item_block);
     __state.condition_block_stack.push(condition_block);
@@ -46,12 +46,11 @@ IMPL_HANDLE(Elif) {
     FILTER_COMMENT
     __state.condition_line = true;
     __state.condition_block_stack.top().blocks.back().length =
-        last_cursor - start -
-        __state.condition_block_stack.top().blocks.back().start;
+        last_cursor - __state.condition_block_stack.top().blocks.back().start;
     __state.condition_block_stack.top().blocks.back().end_line =
         __state.line - 1;
     ConditonItemBlock condition_item_block{};
-    condition_item_block.start = last_cursor - start;
+    condition_item_block.start = last_cursor;
     condition_item_block.start_line = __state.line;
     __state.condition_block_stack.top().blocks.push_back(condition_item_block);
     return NextAction::Continue;
@@ -60,12 +59,11 @@ IMPL_HANDLE(Elifdef) {
     FILTER_COMMENT
     __state.condition_line = true;
     __state.condition_block_stack.top().blocks.back().length =
-        last_cursor - start -
-        __state.condition_block_stack.top().blocks.back().start;
+        last_cursor - __state.condition_block_stack.top().blocks.back().start;
     __state.condition_block_stack.top().blocks.back().end_line =
         __state.line - 1;
     ConditonItemBlock condition_item_block{};
-    condition_item_block.start = last_cursor - start;
+    condition_item_block.start = last_cursor;
     condition_item_block.start_line = __state.line;
     __state.condition_block_stack.top().blocks.push_back(condition_item_block);
     return NextAction::Continue;
@@ -74,12 +72,11 @@ IMPL_HANDLE(Else) {
     FILTER_COMMENT
     __state.condition_line = true;
     __state.condition_block_stack.top().blocks.back().length =
-        last_cursor - start -
-        __state.condition_block_stack.top().blocks.back().start;
+        last_cursor - __state.condition_block_stack.top().blocks.back().start;
     __state.condition_block_stack.top().blocks.back().end_line =
         __state.line - 1;
     ConditonItemBlock condition_item_block{};
-    condition_item_block.start = last_cursor - start;
+    condition_item_block.start = last_cursor;
     condition_item_block.start_line = __state.line;
     __state.condition_block_stack.top().blocks.push_back(condition_item_block);
     return NextAction::Continue;
@@ -88,7 +85,7 @@ IMPL_HANDLE(Endif) {
     FILTER_COMMENT
     if (!__state.condition_block_stack.empty()) {
         __state.condition_block_stack.top().blocks.back().length =
-            last_cursor - start -
+            last_cursor -
             __state.condition_block_stack.top().blocks.back().start;
         __state.condition_block_stack.top().blocks.back().end_line =
             __state.line - 1;
@@ -100,7 +97,7 @@ IMPL_HANDLE(Include) {
     FILTER_COMMENT
     __state.include_block = true;
     __include_blocks.emplace_back(IncludeBlock{});
-    __include_blocks.back().start = (size_t)(YYMARKER - start);
+    __include_blocks.back().start = last_cursor;
     __include_blocks.back().start_line = __state.line;
     __include_blocks.back().end_line = __state.line;
     const char *en = nullptr;
@@ -117,7 +114,7 @@ IMPL_HANDLE(Include) {
         }
         __include_blocks.back().include_path = std::string(YYCURSOR, en);
         __include_blocks.back().length =
-            (size_t)(en - start - __include_blocks.back().start);
+            (size_t)(en - __include_blocks.back().start);
         YYCURSOR = en + 1;
         __state.include_block = false;
     } else {
@@ -131,7 +128,7 @@ IMPL_HANDLE(Define) {
     ERR VV("Start macro define") ENDL;
     __state.macro_define = true;
     __macro_define_blocks.emplace_back(MacroDefineBlock{});
-    __macro_define_blocks.back().start = (size_t)(last_cursor - start);
+    __macro_define_blocks.back().start = last_cursor;
     __macro_define_blocks.back().ident_start = (size_t)(YYCURSOR - start);
     __macro_define_blocks.back().start_line = __state.line;
     return NextAction::Continue;
@@ -167,14 +164,14 @@ IMPL_HANDLE(Right_parenthesis) {
         if (__state.macro_param_define) {
             __state.macro_param_define = false;
             __macro_define_blocks.back().body_start =
-                (size_t)(YYCURSOR - start);
+                (size_t)(YYCURSOR - __macro_define_blocks.back().start);
         }
         return NextAction::Continue;
     } else if (__state.macro_function_call) {
         if (--__state.parenthesis_count == 0) {
             if (__state.last_param_cursor != last_cursor)
                 __macro_idents.back().real_params.emplace_back(
-                    __state.last_param_cursor - start,
+                    __state.last_param_cursor,
                     YYCURSOR - __state.last_param_cursor - 1,
                     __state.last_param_line, __state.line);
             __state.macro_function_call = false;
@@ -194,7 +191,7 @@ IMPL_HANDLE(Comma) {
     else if (__state.macro_function_call) {
         if (__state.parenthesis_count == 1) {
             __macro_idents.back().real_params.emplace_back(
-                __state.last_param_cursor - start,
+                __state.last_param_cursor,
                 last_cursor - __state.last_param_cursor,
                 __state.last_param_line, __state.line);
             __state.last_param_cursor = YYCURSOR;
@@ -232,13 +229,12 @@ IMPL_HANDLE(Ident_before_Double_hash) {
                                    __macro_define_blocks.back().params.end(),
                                    [&](const auto &b) {
                                        return std::string_view(
-                                                  __content->data() + b.start,
-                                                  b.length) == ident;
+                                                  +b.start, b.length) == ident;
                                    });
             it != __macro_define_blocks.back().params.end()) {
             OUT VV("find: ") SV(mm, ident) ENDL;
             __macro_define_blocks.back().params_refs.emplace_back(
-                last_cursor - start, YYCURSOR - last_cursor,
+                last_cursor, YYCURSOR - last_cursor,
                 it - __macro_define_blocks.back().params.begin(),
                 MacroParamRefType::Concat);
             __state.cur_macro_param_ref_type = MacroParamRefType::Normal;
@@ -266,24 +262,23 @@ IMPL_HANDLE(Ident) {
                 (size_t)(YYCURSOR - start);
         } else if (__state.macro_param_define) {
             __macro_define_blocks.back().params.emplace_back(
-                last_cursor - start, YYCURSOR - last_cursor);
+                last_cursor, YYCURSOR - last_cursor);
         } else if (auto it = std::find_if(
                        __macro_define_blocks.back().params.begin(),
                        __macro_define_blocks.back().params.end(),
                        [&](const auto &b) {
-                           return std::string_view(start + b.start, b.length) ==
-                                  ident;
+                           return std::string_view(b.start, b.length) == ident;
                        });
                    it != __macro_define_blocks.back().params.end()) {
             OUT VV("find: ") SV(mm, ident) ENDL;
             if (__state.cur_macro_param_ref_type == MacroParamRefType::Normal) {
                 __macro_define_blocks.back().params_refs.emplace_back(
-                    last_cursor - start, YYCURSOR - last_cursor,
+                    last_cursor, YYCURSOR - last_cursor,
                     it - __macro_define_blocks.back().params.begin(),
                     __state.cur_macro_param_ref_type);
             } else
                 __macro_define_blocks.back().params_refs.emplace_back(
-                    __state.last_param_cursor - start,
+                    __state.last_param_cursor,
                     YYCURSOR - __state.last_param_cursor,
                     it - __macro_define_blocks.back().params.begin(),
                     __state.cur_macro_param_ref_type);
@@ -292,7 +287,7 @@ IMPL_HANDLE(Ident) {
         return NextAction::Continue;
     } else if (auto it = __macro_define_map.find(ident);
                it != __macro_define_map.end()) {
-        __macro_idents.emplace_back(last_cursor - start, YYCURSOR - last_cursor,
+        __macro_idents.emplace_back(last_cursor, YYCURSOR - last_cursor,
                                     __state.line, it->second);
         auto &block = __macro_define_blocks[it->second];
         if (block.is_function) {
@@ -311,7 +306,7 @@ IMPL_HANDLE(Ident) {
 IMPL_HANDLE(Block_comment_start) {
     FILTER_COMMENT
     __block_comment_blocks.emplace_back(PreCompiledBlock{});
-    __block_comment_blocks.back().start = (size_t)(YYMARKER - start);
+    __block_comment_blocks.back().start = last_cursor;
     __block_comment_blocks.back().start_line = __state.line;
     __state.block_comment = true;
     return NextAction::Continue;
@@ -320,7 +315,7 @@ IMPL_HANDLE(Block_comment_end) {
     if (__state.block_comment) {
         __state.block_comment = false;
         __block_comment_blocks.back().length =
-            (size_t)(YYCURSOR - start) - __block_comment_blocks.back().start;
+            (size_t)(YYCURSOR - __block_comment_blocks.back().start);
         __block_comment_blocks.back().end_line = __state.line;
     }
     return NextAction::Continue;
@@ -336,11 +331,11 @@ IMPL_HANDLE(Double_quotation_marks) {
     __state.string = !__state.string;
     if (__state.string) {
         __string_blocks.emplace_back(PreCompiledBlock{});
-        __string_blocks.back().start = (size_t)(YYMARKER - start);
+        __string_blocks.back().start = last_cursor;
         __string_blocks.back().start_line = __state.line;
     } else {
         __string_blocks.back().length =
-            (size_t)(YYCURSOR - start) - __string_blocks.back().start;
+            (size_t)(YYCURSOR - __string_blocks.back().start);
         __string_blocks.back().end_line = __state.line;
     }
     return NextAction::Continue;
@@ -349,26 +344,27 @@ IMPL_HANDLE(Native_string) {
     ERR VV("-------------Nwe Block--------") ENDL;
     FILTER_COMMENT
     __string_blocks.emplace_back(PreCompiledBlock{});
-    __string_blocks.back().start = (size_t)(YYMARKER - start);
+    __string_blocks.back().start = last_cursor;
     __string_blocks.back().start_line = __state.line;
     __state.name_force_string = true;
     auto &ss = __string_blocks.back();
-    auto ns = ")" +
-              (__content->substr(ss.start + 1, __content->find('(', ss.start) -
-                                                   ss.start - 1)) +
-              "\"";
-    auto pos = __content->find(ns, ss.start) + ns.size();
-    __state.line += std::count(start + ss.start, start + pos, L'\n');
+    auto cpos = ss.start - start;
+    auto ns =
+        ")" +
+        (__content->substr(cpos + 1, __content->find('(', cpos) - cpos - 1)) +
+        "\"";
+    auto pos = __content->find(ns, cpos) + ns.size();
+    __state.line += std::count(ss.start, start + pos, L'\n');
 
     OUT NV(ns) NV(__state.line) ENDL;
     OUT NV(pos) ENDL;
-    OUT NV(__content->find(ns, ss.start)) ENDL;
+    // OUT NV(__content->find(ns,  ss.start)) ENDL;
     OUT NV(__content->at(pos - 1)) ENDL;
     OUT NV(__content->at(pos)) ENDL;
     OUT NV(__content[pos + 1]) ENDL;
     YYCURSOR = start + pos;
     OUT NV(YYCURSOR) ENDL;
-    ss.length = pos - ss.start;
+    ss.length = pos - cpos;
     __state.name_force_string = false;
     if (__state.macro_define) {
         __string_blocks.pop_back();
@@ -382,13 +378,13 @@ IMPL_HANDLE(Line_comment) {
     if (__state.macro_define) {
         ERR VV("End macro define") ENDL;
         __macro_define_blocks.back().length =
-            (size_t)(YYCURSOR - start) - __macro_define_blocks.back().start - 2;
+            (size_t)(YYCURSOR - __macro_define_blocks.back().start) - 2;
         __macro_define_blocks.back().end_line = __state.line;
         __state.macro_define = false;
     }
     __state.line_comment = true;
     __line_comment_blocks.emplace_back(PreCompiledBlock{});
-    __line_comment_blocks.back().start = (size_t)(YYMARKER - start);
+    __line_comment_blocks.back().start = last_cursor;
     __line_comment_blocks.back().start_line = __state.line;
     return NextAction::Continue;
 }
@@ -410,8 +406,7 @@ IMPL_HANDLE(Eof) {
 
     if (__state.condition_line) {
         __state.condition_block_stack.top().blocks.back().condition_length =
-            (YYCURSOR - start) -
-            __state.condition_block_stack.top().blocks.back().start;
+            YYCURSOR - __state.condition_block_stack.top().blocks.back().start;
         __state.condition_line = false;
     }
     if (__state.condition_endif_line) {
@@ -419,7 +414,7 @@ IMPL_HANDLE(Eof) {
         OUT VV("End condition block") ENDL;
         auto b = __state.condition_block_stack.top();
         b.end_line = __state.line - 1;
-        b.length = last_cursor - start - b.start;
+        b.length = last_cursor - b.start;
         __state.condition_block_stack.pop();
         if (__state.condition_block_stack.empty()) {
             __condition_blocks.push_back(b);
@@ -437,13 +432,13 @@ IMPL_HANDLE(Eof) {
     if (__state.line_comment) {
         __state.line_comment = false;
         __line_comment_blocks.back().length =
-            (size_t)(YYCURSOR - start) - __line_comment_blocks.back().start;
+            YYCURSOR - __line_comment_blocks.back().start;
         __line_comment_blocks.back().end_line = __state.line - 1;
     }
     if (__state.macro_define) {
         ERR VV("End macro define") ENDL;
         __macro_define_blocks.back().length =
-            (size_t)(YYCURSOR - start) - __macro_define_blocks.back().start - 1;
+            YYCURSOR - __macro_define_blocks.back().start - 1;
         __macro_define_blocks.back().end_line = __state.line - 1;
         __state.macro_define = false;
     }

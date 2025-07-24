@@ -10,13 +10,13 @@ class PreCompiledLexer {
 
    public:
     struct PreCompiledBlock {
-        size_t start{0};
+        const char *start{nullptr};
         size_t length{0};
         size_t start_line{0};
         size_t end_line{0};
     };
     struct Ident {
-        size_t start{0};
+        const char *start{nullptr};
         size_t length{0};
         size_t line{0};
         size_t macro_id{0};
@@ -29,13 +29,13 @@ class PreCompiledLexer {
     };
 
     struct MacroParamRef {
-        size_t start{0};
+        const char *start{nullptr};
         size_t length{0};
         size_t shape_param_id{0};
         MacroParamRefType type{MacroParamRefType::Normal};
     };
     struct MacroParam {
-        size_t start{0};
+        const char *start{nullptr};
         size_t length{0};
     };
     struct MacroDefineBlock : public PreCompiledBlock {
@@ -119,6 +119,12 @@ class PreCompiledLexer {
     NextAction __handle();
 
    private:
+    const char *start;
+    const char *YYCURSOR;
+    const char *YYMARKER = YYCURSOR;
+    const char *last_cursor = YYCURSOR;
+    const char *limit = YYCURSOR + __content->size();
+    const char *pre_cursor;
     const std::string *__content;
     std::unordered_map<std::string_view, size_t> __macro_define_map;
     std::vector<IncludeBlock> __include_blocks;
@@ -129,14 +135,6 @@ class PreCompiledLexer {
     std::vector<Ident> __macro_idents;
     std::vector<ConditonBlock> __condition_blocks;
     std::vector<size_t> __line_index{0};
-
-   private:
-    const char *start;
-    const char *YYCURSOR;
-    const char *YYMARKER = YYCURSOR;
-    const char *last_cursor = YYCURSOR;
-    const char *limit = YYCURSOR + __content->size();
-    const char *pre_cursor;
     State __state;
 
    public:
@@ -171,4 +169,12 @@ class PreCompiledLexer {
         return __condition_blocks;
     }
     inline const std::string &content() const { return *__content; }
+
+    inline size_t pos(const char *ptr) const {
+        auto tmp = ptr - start;
+        if (tmp < 0 || tmp > __content->size()) {
+            return __content->size();
+        }
+        return tmp;
+    }
 };
