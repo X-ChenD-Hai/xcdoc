@@ -1,3 +1,4 @@
+#include <gtest/gtest.h>
 #include <utils/public.h>
 #include <utils/string_slice_view.h>
 
@@ -5,7 +6,7 @@
 
 using namespace std;
 
-int main() {
+TEST(string_slice_view, basic) {
     string a{"123"};
 
     string_slice_view ss;
@@ -17,6 +18,4 @@ int main() {
     a = ss;
     OUT NV(ss) ENDL;
     OUT NV(ss1) ENDL;
-
-    return 0;
 }

@@ -1,18 +1,16 @@
 #include <CppParser/PreCompiledLexer.h>
+#include <gtest/gtest.h>
 #include <utils/public.h>
 
 #include <string>
 
-
-int main() {
+TEST(PreCompiledLexer, all) {
     std::string ss{"12"};
     auto s = ss.begin();
-
-#ifdef __xcdoc_debug__
     using namespace std;
     system("cls");
     auto sorce = new std::string(
-        utiles::read_file(XCDOC_TESTS_RESOURCES_DIR "testPreCompileLexer.cc"));
+        utils::read_file(XCDOC_TESTS_RESOURCES_DIR "testPreCompileLexer.cc"));
     PreCompiledLexer lexer(sorce);
     std::string sss;
     for (;;) {
@@ -101,7 +99,4 @@ int main() {
             }
         }(i, "", " |");
     }
-
-#endif
-    return 0;
 }
