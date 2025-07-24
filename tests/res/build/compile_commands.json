@@ -1,0 +1,8 @@
+[
+{
+  "directory": "D:/31003/Desktop/code/C++/xc/xcdoc/tests/res/build/clang-cl-debug",
+  "command": "D:\\software\\develop\\LLVM\\bin\\clang-cl.exe  /nologo -TP /DWIN32 /D_WINDOWS /GR /EHsc /Zi /Ob0 /Od /RTC1 -MDd /Fosrc\\CMakeFiles\\test.dir\\test.cc.obj /Fdsrc\\CMakeFiles\\test.dir\\ -c -- D:\\31003\\Desktop\\code\\C++\\xc\\xcdoc\\tests\\res\\src\\test.cc",
+  "file": "D:/31003/Desktop/code/C++/xc/xcdoc/tests/res/src/test.cc",
+  "output": "D:/31003/Desktop/code/C++/xc/xcdoc/tests/res/build/clang-cl-debug/src/CMakeFiles/test.dir/test.cc.obj"
+}
+]

@@ -12,3 +12,11 @@
 !Doxyfile
 !LICENSE
 docs/doxygen
+tests/res/*
+!tests/res/build/
+tests/res/build/*
+!tests/res/build/compile_commands.json
+!tests/res/src
+!tests/res/CMakeLists.txt
+!tests/res/testPreCompileLexer.cc
+!cmake/
