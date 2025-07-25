@@ -20,4 +20,4 @@ tests/res/build/*
 !tests/res/CMakeLists.txt
 !tests/res/testPreCompileLexer.cc
 !cmake/
-!CONTRIBUTING
+!CONTRIBUTING.md
