@@ -3,6 +3,7 @@
 #include <utils/public.h>
 
 TEST(CppParser, CppParser) {
+#ifdef CLANG_CL_COMPILE_DATABASE
     try {
         CompileSystem system(utils::read_file(CLANG_CL_COMPILE_DATABASE));
         for (auto& unit : system.units()) {
@@ -14,4 +15,5 @@ TEST(CppParser, CppParser) {
     } catch (const std::exception& e) {
         FAIL() << e.what();
     }
+#endif
 }

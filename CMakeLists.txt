@@ -9,6 +9,12 @@ endif()
 include(cmake/re2c.cmake)
 find_package(nlohmann_json CONFIG REQUIRED)
 
+if(UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
+endif()
+
 option(BUILD_TESTING "Build tests" ON)
 add_subdirectory(src)
 if(BUILD_TESTING)
