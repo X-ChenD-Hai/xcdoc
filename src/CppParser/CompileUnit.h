@@ -1,13 +1,13 @@
 #pragma once
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "CppParser/PreCompiledLexer.h"
-namespace std::filesystem {
-class path;
-}
+
+
 class PreCompiledLexer;
 class CompileUnit {
     using str_list = std::vector<std::string>;

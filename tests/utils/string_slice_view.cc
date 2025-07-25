@@ -48,6 +48,9 @@ TEST(string_slice_view, InsertByIndex) {
     ssv other(&b);
     v.insert(1, other);
     EXPECT_EQ(v.to_string(), "aXYZbc");
+    ssv v1(&a);
+    v1.insert(2, other);
+    EXPECT_EQ(v1.to_string(), "abXYZc");
 }
 
 // insert (iterator 版本)
@@ -58,6 +61,9 @@ TEST(string_slice_view, InsertByIterator) {
     ssv other(&b);
     v.insert(v.begin() + 1, other.begin(), other.end());
     EXPECT_EQ(v.to_string(), "aXYZbc");
+    ssv v1(&a);
+    v1.insert(v1.begin() + 2, other.begin(), other.end());
+    EXPECT_EQ(v1.to_string(), "abXYZc");
 }
 
 // erase

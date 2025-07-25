@@ -108,7 +108,7 @@ void string_slice_view::insert(const iterator &pos, iterator start,
     if (pos.offset < str_queue.size()) {
         it = str_queue.begin() + pos.offset;
         tmp.str_queue.emplace_back(pos.str, it->len - (pos.str - it->str));
-        it->len = pos.str - it->str - 1;
+        it->len = pos.str - it->str;
         ++it;
     }
     str_queue.insert_range(it, tmp.str_queue);
