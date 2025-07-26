@@ -1,0 +1,52 @@
+name: buid-linux
+run-name: ${{ github.actor }} - ${{ github.event_name }}
+on: 
+    push:
+       branches: [main dev]
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    env:
+      CXX: clang++-19
+      CC: clang-19
+      VCPKG_OVERLAY_TRIPLETS: ${{ github.workspace }}/triplets
+      VCPKG_DEFAULT_TRIPLET: x64-linux-clang-libcxx
+    steps:
+      - uses: actions/checkout@v4
+      - name: install libc++ libc++abi ninja clang-19 git
+        run: sudo apt install -y libc++-dev libc++abi-dev ninja-build clang-19 cmake git
+      - name: check clang-19 versions
+        run: |
+          clang-19 --version
+          clang++-19 --version
+          ninja --version
+          git --version
+          cmake --version
+      - name: clone vcpkg
+        working-directory: ${{ github.workspace }}
+        run: git clone https://github.com/microsoft/vcpkg.git
+      - name: init vcpkg and install gtest nlohmann-json
+        working-directory: ${{ github.workspace }}/vcpkg
+        run: |
+          git pull
+          ./bootstrap-vcpkg.sh
+          ./vcpkg integrate install
+          ./vcpkg install gtest nlohmann-json
+      - name: build
+        working-directory: ${{ github.workspace }}
+        run: |
+          cmake -B build -S . -G Ninja \
+          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
+          -DVCPKG_OVERLAY_TRIPLETS=${{ github.workspace }}/triplets \
+          -DVCPKG_TARGET_TRIPLET=x64-linux-clang-libcxx \
+          -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_C_COMPILER=clang-19 \
+          -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build
+      - name: Archive build outputs
+        run: tar -czf build.tar.gz build/
+      - name: Upload compressed archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-archive
+          path: build.tar.gz
+          retention-days: 7 
