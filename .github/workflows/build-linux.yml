@@ -16,7 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: install libc++ libc++abi ninja clang-19 git
-        run: sudo apt install -y libc++-dev libc++abi-dev ninja-build clang-19 cmake git
+        run: sudo apt install -y \
+          libc++-dev libc++abi-dev \
+          ninja-build \
+          clang-19 \
+          cmake \
+          git \
+          re2c
       - name: check clang-19 versions
         run: |
           clang-19 --version
