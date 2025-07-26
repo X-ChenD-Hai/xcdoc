@@ -2,6 +2,7 @@ name: buid-linux
 run-name: ${{ github.actor }} - ${{ github.event_name }}
 on: 
     push:
+      
        branches: 
         - main 
         - dev
@@ -11,61 +12,77 @@ jobs:
     env:
       CXX: clang++-19
       CC: clang-19
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
       VCPKG_OVERLAY_TRIPLETS: ${{ github.workspace }}/triplets
       VCPKG_DEFAULT_TRIPLET: x64-linux-clang-libcxx
     steps:
       - uses: actions/checkout@v4
-      - name: install libc++ libc++abi ninja clang-19 git
-        run: sudo apt update -y && sudo apt install -y \
-          libc++-dev libc++abi-dev \
-          ninja-build \
-          clang-19 \
-          cmake \
-          autoconf \
-          make \
-          git 
-      - name: check clang-19 versions
-        run: |
-          clang-19 --version
-          clang++-19 --version
-          ninja --version
-          git --version
-          cmake --version
-          autoconf --version
-          make --version
-      - name: clone vcpkg re2c
-        working-directory: ${{ github.workspace }}
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          git clone https://github.com/skvadrik/re2c.git
+      - name: Install apt dependencies with caching
+        uses: rishabhc32/apt-package-cache@v1.0.1
+        with:
+          packages: git libc++-dev libc++abi-dev ninja-build clang-19 cmake
+      - name: use vcpkg to install dependencies
+        uses: lukka/run-vcpkg@v7.6
+        with:
+          vcpkgArguments: gtest nlohmann-json --overlay-triplets=${{ env.VCPKG_OVERLAY_TRIPLETS }} 
+          vcpkgDirectory: ${{ env.VCPKG_ROOT }}
+          vcpkgTriplet: ${{ env.VCPKG_DEFAULT_TRIPLET }}
+          vcpkgGitCommitId: 0cb95c860ea83aafc1b24350510b30dec535989a
+          vcpkgArtifactIgnoreEntries: |
+            **/*
+            !installed
+            !/vcpkg
+            !vcpkg.exe
+            !vcpkg
+            !.git
+      - name: Cache re2c executable
+        id: cache-re2c
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/re2c/re2c
+          key: re2c-${{ runner.os }}-${{ hashFiles('**/re2c') }}
+          restore-keys: |
+            re2c-${{ runner.os }}-
       - name: build re2c
-        working-directory: ${{ github.workspace }}/re2c
+        if: steps.cache-re2c.outputs.cache-hit != 'true'
         run: |
+          sudo apt-get install -y autoconf make
+          git clone https://github.com/skvadrik/re2c.git  $(pwd)/re2c
+          cd re2c
+          autoreconf -i -W all
           ./configure  --disable-rust --disable-python  --disable-ocaml  --disable-js  --disable-java --disable-haskelle --disable-golang  --disable-dlang  --disable-swift  --disable-vlang --disable-zig  --disable-haskell
           make -j$(nproc)
+      - name: install re2c
+        run: |
+          cd $(pwd)/re2c
           sudo install re2c /usr/bin/
-      - name: init vcpkg and install gtest nlohmann-json
-        working-directory: ${{ github.workspace }}/vcpkg
+      - name: build-debug
         run: |
-          git pull
-          ./bootstrap-vcpkg.sh
-          ./vcpkg integrate install
-          ./vcpkg install gtest nlohmann-json
-      - name: build
-        working-directory: ${{ github.workspace }}
-        run: |
-          cmake -B build -S . -G Ninja \
-          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
-          -DVCPKG_OVERLAY_TRIPLETS=${{ github.workspace }}/triplets \
+          cmake -B build/debug -S . -G Ninja \
+          -DCMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake \
+          -DVCPKG_OVERLAY_TRIPLETS=$(pwd)/triplets \
           -DVCPKG_TARGET_TRIPLET=x64-linux-clang-libcxx \
           -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_C_COMPILER=clang-19 \
           -DCMAKE_BUILD_TYPE=Debug
-          cmake --build build
-      - name: Archive build outputs
-        run: tar -czf build.tar.gz build/
-      - name: Upload compressed archive
+          cmake --build build/debug
+      - name: build-release
+        run: |
+          cmake -B build/release -S . -G Ninja \
+          -DCMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake \
+          -DVCPKG_OVERLAY_TRIPLETS=$(pwd)/triplets \
+          -DVCPKG_TARGET_TRIPLET=x64-linux-clang-libcxx \
+          -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_C_COMPILER=clang-19 \
+          -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/release
+      - name: Upload compressed debug archive
         uses: actions/upload-artifact@v4
         with:
-          name: build-archive
-          path: build.tar.gz
-          retention-days: 7 
+          name: ${{ github.ref_name }}-linux-debug-build  # 使用 github.ref_name
+          path: build/debug
+          retention-days: 7
+      - name: Upload compressed release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.ref_name }}-linux-release-build  # 使用 github.ref_name
+          path: build/release
+          retention-days: 7
