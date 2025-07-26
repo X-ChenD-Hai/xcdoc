@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: install libc++ libc++abi ninja clang-19 git
-        run: sudp apt update -y && sudo apt install -y \
+        run: sudo apt update -y && sudo apt install -y \
           libc++-dev libc++abi-dev \
           ninja-build \
           clang-19 \
