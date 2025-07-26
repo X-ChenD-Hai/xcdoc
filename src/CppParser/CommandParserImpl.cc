@@ -1,4 +1,5 @@
 #include "CppParser/CommandParserImpl.h"
+#include <algorithm>
 
 #include "utils/public.h"
 
