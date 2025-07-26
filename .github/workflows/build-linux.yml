@@ -21,8 +21,9 @@ jobs:
           ninja-build \
           clang-19 \
           cmake \
-          git \
-          re2c
+          autoconf \
+          make \
+          git 
       - name: check clang-19 versions
         run: |
           clang-19 --version
@@ -30,9 +31,19 @@ jobs:
           ninja --version
           git --version
           cmake --version
-      - name: clone vcpkg
+          autoconf --version
+          make --version
+      - name: clone vcpkg re2c
         working-directory: ${{ github.workspace }}
-        run: git clone https://github.com/microsoft/vcpkg.git
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          git clone https://github.com/skvadrik/re2c.git
+      - name: build re2c
+        working-directory: ${{ github.workspace }}/re2c
+        run: |
+          ./configure  --disable-rust --disable-python  --disable-ocaml  --disable-js  --disable-java --disable-haskelle --disable-golang  --disable-dlang  --disable-swift  --disable-vlang --disable-zig  --disable-haskell
+          make -j$(nproc)
+          sudo install re2c /usr/bin/
       - name: init vcpkg and install gtest nlohmann-json
         working-directory: ${{ github.workspace }}/vcpkg
         run: |
