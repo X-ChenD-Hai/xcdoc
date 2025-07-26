@@ -22,3 +22,4 @@ tests/res/build/*
 !cmake/
 !CONTRIBUTING.md
 !.github/
+!triplets/
