@@ -2,7 +2,9 @@ name: buid-linux
 run-name: ${{ github.actor }} - ${{ github.event_name }}
 on: 
     push:
-       branches: [main dev]
+       branches: 
+        - main 
+        - dev
 jobs:
   build-linux:
     runs-on: ubuntu-latest
