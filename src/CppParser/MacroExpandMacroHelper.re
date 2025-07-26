@@ -91,7 +91,7 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
 }
 void MacroExpandMacroHelper::handle_ident() {
     if (__state.macro_parma) return;
-    auto ident = std::string(last_cursor, YYCURSOR);
+    auto ident = string_slice_view(last_cursor, YYCURSOR).to_string();
     if (auto it = lexer->macro_define_map().find(ident);
         it != lexer->macro_define_map().end()) {
         macro_idents.emplace_back(last_cursor, YYCURSOR, it->second,
