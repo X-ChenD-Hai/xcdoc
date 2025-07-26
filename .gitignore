@@ -21,3 +21,4 @@ tests/res/build/*
 !tests/res/testPreCompileLexer.cc
 !cmake/
 !CONTRIBUTING.md
+!.github/
