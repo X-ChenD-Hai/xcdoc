@@ -1,9 +1,10 @@
 name: action debug
 run-name: ${{ github.actor }} - ${{ github.event_name }}
 on: 
-    push:
-       branches: 
-        - ci/github
+    workflow_dispatch:
+    # push:
+      #  branches: 
+        # - ci/github
 
 jobs:
   debug-linux:

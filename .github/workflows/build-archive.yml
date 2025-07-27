@@ -6,6 +6,7 @@ on:
        branches: 
         - main 
         - dev
+        - ci/github
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -67,16 +68,22 @@ jobs:
           -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_C_COMPILER=clang-19 \
           -DCMAKE_BUILD_TYPE=Release
           cmake --build build/release
+      - name: get branch name
+        id: get-branch-name
+        run: |
+          branch_name=$(echo ${GITHUB_REF#refs/heads/})
+          branch_name=$(echo $branch_name|sed 's|/|-|g')
+          echo "::set-output name=branch::$branch_name"
       - name: Upload compressed debug archive
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.ref_name }}-linux-debug-build  # 使用 github.ref_name
+          name: xcdoc-${{ steps.get-branch-name.outputs.branch }}-linux-debug-build  # 使用 github.ref_name
           path: build/debug
           retention-days: 7
       - name: Upload compressed release archive
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.ref_name }}-linux-release-build  # 使用 github.ref_name
+          name: xcdoc-${{ steps.get-branch-name.outputs.branch }}-linux-release-build  # 使用 github.ref_name
           path: build/release
           retention-days: 7
   build-windows:
@@ -173,15 +180,21 @@ jobs:
           -DCMAKE_C_COMPILER=${{ env.CC }} `
           -DCMAKE_BUILD_TYPE=Release
           cmake --build build\release
+      - name: get branch name
+        id: get-branch-name
+        run: |
+          $branch_name = "ci/github"
+          $branch_name = $branch_name -replace "/", "-"
+          echo "::set-output name=branch::$branch_name"
       - name: Upload compressed debug archive
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.ref_name }}-windows-debug-build  # 使用 github.ref_name
+          name: xcdoc-${{ steps.get-branch-name.outputs.branch }}-windows-debug-build  # 使用 github.ref_name
           path: build\debug
           retention-days: 7
       - name: Upload compressed release archive
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.ref_name }}-windows-release-build  # 使用 github.ref_name
+          name: xcdoc-${{ steps.get-branch-name.outputs.branch }}-windows-release-build  # 使用 github.ref_name
           path: build\release
           retention-days: 7
