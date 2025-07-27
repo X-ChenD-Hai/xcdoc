@@ -11,7 +11,7 @@ TEST(CppParser, CppParser) {
             for (auto& it : unit->attached_lexers()) {
                 OUT SV(if, it.first) ENDL;
             }
-            // OUT VV(unit->pre_lexer()->source()) ENDL;
+            OUT VV(unit->pre_lexer()->source()) ENDL;
         }
     } catch (const std::exception& e) {
         FAIL() << e.what();
@@ -24,7 +24,7 @@ TEST(CppParser, CppParser) {
             for (auto& it : unit->attached_lexers()) {
                 OUT SV(if, it.first) ENDL;
             }
-            // OUT VV(unit->pre_lexer()->source()) ENDL;
+            OUT VV(unit->pre_lexer()->source()) ENDL;
         }
     } catch (const std::exception& e) {
         FAIL() << e.what();
@@ -37,7 +37,7 @@ TEST(CppParser, CppParser) {
             for (auto& it : unit->attached_lexers()) {
                 OUT SV(if, it.first) ENDL;
             }
-            // OUT VV(unit->pre_lexer()->source()) ENDL;
+            OUT VV(unit->pre_lexer()->source()) ENDL;
         }
     } catch (const std::exception& e) {
         FAIL() << e.what();
