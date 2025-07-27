@@ -11,5 +11,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: echo ref
-      run:   echo ${{ github.ref_name }}
+    - name: get branch name
+      id: get-branch-name
+      run:   echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
+    - name: debug
+      run: |
+        echo "branch name: ${{ steps.get-branch-name.outputs.branch }}"
