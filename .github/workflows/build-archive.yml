@@ -25,6 +25,7 @@ jobs:
       - name: use vcpkg to install dependencies
         uses: lukka/run-vcpkg@v7.6
         with:
+          appendedCacheKey: ${{ env.VCPKG_DEFAULT_TRIPLET }}
           vcpkgArguments: gtest nlohmann-json --overlay-triplets=${{ env.VCPKG_OVERLAY_TRIPLETS }} 
           vcpkgDirectory: ${{ env.VCPKG_ROOT }}
           vcpkgTriplet: ${{ env.VCPKG_DEFAULT_TRIPLET }}
@@ -141,6 +142,7 @@ jobs:
       - name: use vcpkg to install dependencies
         uses: lukka/run-vcpkg@v7.6
         with:
+          appendedCacheKey: ${{ env.VCPKG_DEFAULT_TRIPLET }}
           vcpkgArguments: gtest nlohmann-json --overlay-triplets=${{ env.VCPKG_OVERLAY_TRIPLETS }} 
           vcpkgDirectory: ${{ env.VCPKG_ROOT }}
           vcpkgTriplet: ${{ env.VCPKG_DEFAULT_TRIPLET }}
