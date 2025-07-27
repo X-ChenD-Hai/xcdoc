@@ -1,4 +1,4 @@
-name: buid-linux
+name: buid-archive
 run-name: ${{ github.actor }} - ${{ github.event_name }}
 on: 
     push:
