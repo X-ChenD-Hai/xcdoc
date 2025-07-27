@@ -14,8 +14,8 @@ jobs:
     - name: get branch name
       id: get-branch-name
       run: |
-        $branch_name $(echo ${GITHUB_REF#refs/heads/})
-        $branch_name = $(echo $branch_name|sed 's/\/-/g')
+        branch_name=$(echo ${GITHUB_REF#refs/heads/})
+        branch_name=$(echo $branch_name|sed 's|/|-|g')
         echo "::set-output name=branch::$branch_name"
     - name: debug
       run: |
