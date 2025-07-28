@@ -22,10 +22,12 @@
 #define VV(v)
 #define ENDL
 #endif
+class string_slice_view;
 namespace utils {
 std::string read_file(const std::string &filename);
 std::string unquote(std::string_view raw);
 using string_list_t = std::vector<std::string>;
+using string_slice_list_t = std::vector<string_slice_view>;
 template <typename T>
 using unique_list_t = std::vector<std::unique_ptr<T>>;
 template <typename T>

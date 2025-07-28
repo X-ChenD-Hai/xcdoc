@@ -8,36 +8,57 @@ class CppSymbol {
         UNKNOWN,
         CLASS,
     };
+    friend class SourceLexer;
+    template <Kind k>
+    friend class CppSymbolImpl;
 
-   protected:
+   private:
     template <Kind k>
     friend class CppSymbolImpl;
     Kind __kind = Kind::UNKNOWN;
-    CppSymbol() = default;
+    string_slice_view __identifier;
+    CppSymbol(Kind kind, string_slice_view identifier);
+
+   public:
+    CppSymbol() = delete;
+    string_slice_view identifier() const { return __identifier; }
+    Kind kind() const { return __kind; }
 };
-template <CppSymbol::Kind k = CppSymbol::Kind::UNKNOWN>
+inline std::ostream& operator<<(std::ostream& os, const CppSymbol::Kind& kind) {
+    static std::unordered_map<CppSymbol::Kind, std::string> kind_to_string = {
+        {CppSymbol::Kind::UNKNOWN, "UNKNOWN"},
+        {CppSymbol::Kind::CLASS, "CLASS"},
+    };
+    os << kind_to_string[kind];
+    return os;
+}
+
+template <CppSymbol::Kind k>
 class CppSymbolImpl;
 
 template <>
 class CppSymbolImpl<CppSymbol::Kind::UNKNOWN> : public CppSymbol {
-   private:
    public:
-    std::string name() const { TODO; };
-    const std::string& kind() const { TODO; };
-    template <Kind _k>
-    auto& __as() {
-        return static_cast<CppSymbolImpl<_k>>(*this);
-    }
-    template <class T>
-    bool is() const noexcept {
-        TODO;
-    }
+    CppSymbolImpl(string_slice_view identifier)
+        : CppSymbol(CppSymbol::Kind::UNKNOWN, identifier) {}
+};
+template <>
+class CppSymbolImpl<CppSymbol::Kind::CLASS> : public CppSymbol {
+   public:
+    CppSymbolImpl(string_slice_view identifier)
+        : CppSymbol(CppSymbol::Kind::CLASS, identifier) {}
 };
 
+// using symbol_list_t = std::vector<std::unique_ptr<CppSymbol>>;
+using symbol_list_t = std::vector<std::shared_ptr<CppSymbol>>;
 class SourceLexer {
     // PreCompiledLexer __pre_compiled_lexer;
     PreCompiledLexer* __pre_compiled_lexer;
+    symbol_list_t __synbols;
 
    public:
     SourceLexer(PreCompiledLexer* pre_compiled_lexer);
+
+    symbol_list_t synbols();
+    void parse();
 };

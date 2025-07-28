@@ -7,14 +7,28 @@ namespace testing {
 using SourceLexer_ = ::SourceLexer;
 class SourceLexer : public testing::Test {
    public:
+    std::string source;
     std::unique_ptr<PreCompiledLexer> pre_compiled_lexer;
     std::unique_ptr<SourceLexer_> source_lexer;
 
     void SetUp() override {
-        auto source = utils::read_file(__RS("test.cc"));
+        source = utils::read_file(__RS("test.cc"));
         pre_compiled_lexer = std::make_unique<PreCompiledLexer>(&source);
         source_lexer = std::make_unique<SourceLexer_>(pre_compiled_lexer.get());
     }
 };
-TEST_F(SourceLexer, Test) {}
+
+enum class AA {
+    A,
+    B,
+};
+
+TEST_F(SourceLexer, Test) {
+    constexpr AA a = static_cast<AA>(5);
+
+    source_lexer->parse();
+    for (auto &s : source_lexer->synbols()) {
+        OUT NV(s->kind()) NV(s->identifier()) ENDL;
+    }
+}
 }  // namespace testing
