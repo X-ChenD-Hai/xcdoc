@@ -14,6 +14,7 @@ add_executable(test_CppParser
     CppParser/CppParser.cc
     CppParser/CommandParser.cc
     CppParser/PreCompileLexer.cc
+    CppParser/SourceLexer.cc
 )
 add_test(NAME utils.all COMMAND test_utils)
 add_test(NAME utils.string_slice_view COMMAND test_utils --gtest_filter=string_slice_view.*)
@@ -21,3 +22,4 @@ add_test(NAME CppParser.all COMMAND test_CppParser)
 add_test(NAME CppParser.CppParser COMMAND test_CppParser --gtest_filter=CppParser.*)
 add_test(NAME CppParser.CommandParser COMMAND test_CppParser --gtest_filter=CommandParser.*)
 add_test(NAME CppParser.PreCompileLexer COMMAND test_CppParser --gtest_filter=PreCompileLexer.*)
+add_test(NAME CppParser.SourceLexer COMMAND test_CppParser --gtest_filter=SourceLexer.*)
