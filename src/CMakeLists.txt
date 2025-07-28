@@ -13,6 +13,7 @@ re2c_generate(
     FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/CppParser/PreCompiledLexer.re
     ${CMAKE_CURRENT_SOURCE_DIR}/CppParser/MacroExpandMacroHelper.re
+    ${CMAKE_CURRENT_SOURCE_DIR}/CppParser/SourceLexer.re
     DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/CppParser/def.re
 )
@@ -31,3 +32,11 @@ target_sources(xcdoc_lib PRIVATE
     ${CPP_PARSER_SOURCE}
 )
 
+add_executable(xcdoc)
+
+target_sources(xcdoc PRIVATE
+    main.cc
+)
+target_link_libraries(xcdoc PRIVATE
+    xcdoc_lib
+)
