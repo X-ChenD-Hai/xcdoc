@@ -1,5 +1,6 @@
 // re2c --lang c++
 #include "CppParser/SourceLexer.h"
+#include "Source.tab.h"
 /*!include:re2c "def.re" */
 
 SourceLexer::SourceLexer(PreCompiledLexer* pre_compiled_lexer)
@@ -30,7 +31,8 @@ void SourceLexer::parse() {
             ident {
                 if (class_prefix) {
                     class_prefix = false;
-                    __synbols.emplace_back(new S<K::CLASS>({last_cursor, YYCURSOR}));
+                    __synbols.emplace_back(new S<K::CLASS>({last_cursor,
+           YYCURSOR}));
                 }
                 continue;
             }
