@@ -1,3 +1,2 @@
-#include "utils/public.h"
-
-int main(int argc, char* argv[]) { TODO; }
+extern int app(int argc, char* argv[]);
+int main(int argc, char* argv[]) { return app(argc, argv); }

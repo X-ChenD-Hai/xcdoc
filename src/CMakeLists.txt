@@ -31,6 +31,7 @@ target_sources(xcdoc_lib PRIVATE
     ${UTILS_SOURCE}
     ${CPP_PARSER_SOURCE}
 )
+add_subdirectory(frontend/commandline)
 
 add_executable(xcdoc)
 
@@ -39,4 +40,5 @@ target_sources(xcdoc PRIVATE
 )
 target_link_libraries(xcdoc PRIVATE
     xcdoc_lib
+    xcdoc_frontend_commandline
 )
