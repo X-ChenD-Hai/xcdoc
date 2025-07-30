@@ -2,6 +2,20 @@
     "version": 9,
     "configurePresets": [
         {
+            "name": "enable-testing",
+            "hidden": true,
+            "cacheVariables": {
+                "ENABLE_TESTING": true
+            }
+        },
+        {
+            "name": "linux-build",
+            "hidden": true,
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-linux-clang-libcxx"
+            }
+        },
+        {
             "name": "debug",
             "binaryDir": "build/debug",
             "generator": "Ninja",
@@ -10,8 +24,7 @@
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/bin/${presetName}",
                 "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/bin/${presetName}",
                 "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/lib/${presetName}",
-                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-                "ENABLE_TESTING": true
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
             }
         },
         {
@@ -26,6 +39,21 @@
                 "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/lib/${presetName}",
                 "CMAKE_BUILD_TYPE": "MinSizeRel"
             }
+        },
+        {
+            "name": "linux-debug",
+            "inherits": [
+                "enable-testing",
+                "linux-build",
+                "debug"
+            ]
+        },
+        {
+            "name": "linux-release",
+            "inherits": [
+                "linux-build",
+                "release"
+            ]
         }
     ]
 }
