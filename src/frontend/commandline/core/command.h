@@ -52,6 +52,7 @@ class CommandController {
     void setRootCommand(Args&&... args) {
         __root_command =
             std::make_unique<T>(__app.get(), std::forward<Args>(args)...);
+        __app->description(__COMMAND_DESCRIPTION<T>);
     }
     ~CommandController() {}
 };

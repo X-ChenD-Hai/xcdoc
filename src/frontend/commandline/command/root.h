@@ -1,5 +1,5 @@
 #include "../core/command.h"
-
+#include "./class.h"
 class RootCommand : public Command {
    private:
     struct {
@@ -10,6 +10,7 @@ class RootCommand : public Command {
     RootCommand(CLI::App* _app) : Command(_app) {
         app()->add_flag("-v,--version", flags.version,
                         "Show version information");
+        add_subcommand<ClassCommand>();
     }
     int exec() override {
         // Root command execution logic can be added here if needed
@@ -20,4 +21,4 @@ class RootCommand : public Command {
         return -1;
     }
 };
-DECLARE_COMMAND(RootCommand, "envman", "Manage environment variables");
+DECLARE_COMMAND(RootCommand, "xcdox", "XCDoc command line Interface");
