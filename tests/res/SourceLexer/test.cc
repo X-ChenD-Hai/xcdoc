@@ -1,5 +1,8 @@
-class A {
+class C {};
+class B {};
+class A : public B, C {
     int a;
-    int aw ss;
+
+   public:
     int b;
 };

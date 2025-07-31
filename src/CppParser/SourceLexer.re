@@ -1,6 +1,12 @@
 // re2c --lang c++
+#include <magic_enum/magic_enum.hpp>
+
 #include "CppParser/SourceLexer.h"
+#include "CppParser/symbolsystem/ClassSymbolImpl.h"
 #include "Source.tab.h"
+#include "utils/public.h"
+#include "utils/string_slice_view.h"
+
 /*!include:re2c "def.re" */
 int yyparse(SourceLexer* lexer);
 int yylex(SourceLexer* lexer) { return lexer->yylex(); }
@@ -24,69 +30,67 @@ int SourceLexer::yylex() {
         re2c:define:YYCTYPE = char;
         re2c:yyfill:enable = 0;
 
-        [\n \t]* "class" [\n \t]* {
-            return CLASS;
-        }
-        "public" { return PUBLIC; }
-        "private" { return PRIVATE; }
-        "protected" { return PROTECTED; }
-        "static" { return STATIC; }
-        "const" { return CONST; }
-        "virtual" { return VIRTUAL; }
-        "friend" { return FRIEND; }
-        "typedef" { return TYPEDEF; }
-        "using" { return USING; }
-        "namespace" { return NAMESPACE; }
-        "template" { return TEMPLATE; }
-        "typename" { return TYPENAME; }
-        "struct" { return STRUCT; }
-        "enum" { return ENUM; }
-        "union" { return UNION; }
-        "operator" { return OPERATOR; }
-        "new" { return NEW; }
-        "delete" { return DELETE; }
-        "this" { return THIS; }
-        "true" { return TRUE; }
-        "false" { return FALSE; }
-        "nullptr" { return NULLPTR; }
-        "sizeof" { return SIZEOF; }
-        "alignof" { return ALIGNOF; }
-        "and" { return AND; }
-        "or" { return OR; }
-        "not" { return NOT; }
-        "xor" { return XOR; }
-        "and_eq" { return AND_EQ; }
-        "or_eq" { return OR_EQ; }
-        "xor_eq" { return XOR_EQ; }
-        "not_eq" { return NOT_EQ; }
-        "greater" { return GREATER; }
-        "greater_eq" { return GREATER_EQ; }
-        "less" { return LESS; }
-        "less_eq" { return LESS_EQ; }
-        "typeid" { return TYPEID; }
-        "static_cast" { return STATIC_CAST; }
-        "dynamic_cast" { return DYNAMIC_CAST; }
-        "const_cast" { return CONST_CAST; }
-        "reinterpret_cast" { return REINTERPRET_CAST; }
-        "throw" { return THROW; }
-        "try" { return TRY; }
-        "catch" { return CATCH; }
-        "finally" { return FINALLY; }
-        "if" { return IF; }
-        "else" { return ELSE; }
-        "switch" { return SWITCH; }
-        "case" { return CASE; }
-        "default" { return DEFAULT; }
-        "for" { return FOR; }
-        "while" { return WHILE; }
-        "do" { return DO; }
-        "break" { return BREAK; }
-        "continue" { return CONTINUE; }
-        "return" { return RETURN; }
-        "goto" { return GOTO; }
-        "asm" { return ASM; }
-        "auto" { return AUTO; }
-        "register" { return REGISTER; }
+        "class"  { return CLASS_;}
+        "public" { return PUBLIC_; }
+        "private" { return PRIVATE_; }
+        "protected" { return PROTECTED_; }
+        "static" { return STATIC_; }
+        "const" { return CONST_; }
+        "virtual" { return VIRTUAL_; }
+        "friend" { return FRIEND_; }
+        "typedef" { return TYPEDEF_; }
+        "using" { return USING_; }
+        "namespace" { return NAMESPACE_; }
+        "template" { return TEMPLATE_; }
+        "typename" { return TYPENAME_; }
+        "struct" { return STRUCT_; }
+        "enum" { return ENUM_; }
+        "union" { return UNION_; }
+        "operator" { return OPERATOR_; }
+        "new" { return NEW_; }
+        "delete" { return DELETE_; }
+        "this" { return THIS_; }
+        "true" { return TRUE_; }
+        "false" { return FALSE_; }
+        "nullptr" { return NULLPTR_; }
+        "sizeof" { return SIZEOF_; }
+        "alignof" { return ALIGNOF_; }
+        "and" { return AND_; }
+        "or" { return OR_; }
+        "not" { return NOT_; }
+        "xor" { return XOR_; }
+        "and_eq" { return AND_EQ_; }
+        "or_eq" { return OR_EQ_; }
+        "xor_eq" { return XOR_EQ_; }
+        "not_eq" { return NOT_EQ_; }
+        "greater" { return GREATER_; }
+        "greater_eq" { return GREATER_EQ_; }
+        "less" { return LESS_; }
+        "less_eq" { return LESS_EQ_; }
+        "typeid" { return TYPEID_; }
+        "static_cast" { return STATIC_CAST_; }
+        "dynamic_cast" { return DYNAMIC_CAST_; }
+        "const_cast" { return CONST_CAST_; }
+        "reinterpret_cast" { return REINTERPRET_CAST_; }
+        "throw" { return THROW_; }
+        "try" { return TRY_; }
+        "catch" { return CATCH_; }
+        "finally" { return FINALLY_; }
+        "if" { return IF_; }
+        "else" { return ELSE_; }
+        "switch" { return SWITCH_; }
+        "case" { return CASE_; }
+        "default" { return DEFAULT_; }
+        "for" { return FOR_; }
+        "while" { return WHILE_; }
+        "do" { return DO_; }
+        "break" { return BREAK_; }
+        "continue" { return CONTINUE_; }
+        "return" { return RETURN_; }
+        "goto" { return GOTO_; }
+        "asm" { return ASM_; }
+        "auto" { return AUTO_; }
+        "register" { return REGISTER_; }
         "==" { return OP_EQ; }
         "!=" { return OP_NE; }
         ">=" { return OP_GE; }
@@ -116,3 +120,34 @@ int SourceLexer::yylex() {
 };
 CppSymbol::CppSymbol(Kind kind, string_slice_view identifier)
     : __kind(kind), __identifier(identifier) {}
+
+template <>
+CppSymbolImpl<K::CLASS>* SourceLexer::__add_symbol<K::CLASS>(
+    const string_slice_view& symbol) {
+    __synbols.emplace_back(new S<K::CLASS>(symbol));
+    return (S<K::CLASS>*)(__synbols.back().get());
+}
+CppSymbolImpl<CppSymbol::Kind::CLASS>::CppSymbolImpl(
+    string_slice_view identifier,
+    ClassInnerStatementsSequence* statements_sequence)
+    : CppSymbol(CppSymbol::Kind::CLASS, identifier) {}
+void CppSymbolImpl<CppSymbol::Kind::CLASS>::__set_statements_sequence(
+    ClassInnerStatementsSequence* statements_sequence) {
+#ifdef __xcdoc_debug__
+
+    for (auto& seq : statements_sequence->__sub_sequences) {
+        OUT SV(access_policy, seq->__access_policy) ENDL;
+        for (auto& statement : seq->__statements) {
+            OUT VV("statement: ") SV(kind, statement->__kind) ENDL;
+        }
+    }
+
+#endif
+}
+utils::TodoType CppSymbolImpl<CppSymbol::Kind::CLASS>::methods() { TODO; }
+utils::TodoType CppSymbolImpl<CppSymbol::Kind::CLASS>::fields() { TODO; };
+utils::TodoType CppSymbolImpl<CppSymbol::Kind::CLASS>::symbols() { TODO; };
+void ClassInnerSubStatementsSequence::__add_statement(
+    ClassInnerStatement* statement) {
+    __statements.emplace_back(statement);
+};
