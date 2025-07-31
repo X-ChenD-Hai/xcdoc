@@ -1,4 +1,6 @@
 #pragma once
+#include <linux/limits.h>
+
 #include "CppParser/PreCompiledLexer.h"
 #include "utils/public.h"
 #include "utils/string_slice_view.h"
@@ -7,7 +9,16 @@ class CppSymbol {
    public:
     enum class Kind {
         UNKNOWN,
+        FUNCTION,
+        VARIABLE,
+        NAMESPACE,
         CLASS,
+        STRUCT,
+        ENUM,
+        UNION,
+        ALiAS,
+        MEMBER_FUNCTION,
+        MEMBER_VARIABLE,
     };
     friend class SourceLexer;
     template <Kind k>
@@ -60,6 +71,8 @@ class SourceLexer {
     string_slice_view::iterator YYMARKER;
     string_slice_view::iterator last_cursor;
     const string_slice_view* __content;
+
+    friend int yyparse(SourceLexer* lexer);
 
    public:
     SourceLexer(PreCompiledLexer* pre_compiled_lexer);
