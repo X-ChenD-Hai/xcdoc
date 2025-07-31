@@ -3,6 +3,10 @@
 #               [DEPS  <dep1> <dep2> ...])
 #
 # 输出：out_var 为所有生成的 .re.cc 文件列表
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/re2c"
+)
+find_program(RE2C re2c REQUIRED)
 function(re2c_generate out_var)
     cmake_parse_arguments(ARG "" "" "FILES;DEPS" ${ARGN})
 
