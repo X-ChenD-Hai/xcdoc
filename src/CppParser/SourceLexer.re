@@ -2,48 +2,45 @@
 #include "CppParser/SourceLexer.h"
 #include "Source.tab.h"
 /*!include:re2c "def.re" */
+int yyparse(SourceLexer* lexer);
+int yylex(SourceLexer* lexer) { return lexer->yylex(); }
 
 SourceLexer::SourceLexer(PreCompiledLexer* pre_compiled_lexer)
-    : __pre_compiled_lexer(pre_compiled_lexer) {}
+    : __pre_compiled_lexer(pre_compiled_lexer) {
+    __content = &__pre_compiled_lexer->source();
+    YYCURSOR = __content->begin();
+    last_cursor = YYCURSOR;
+    YYMARKER = YYCURSOR;
+    OUT NV(*__content) ENDL;
+    yyparse(this);
+}
 symbol_list_t SourceLexer::synbols() { return __synbols; };
 using K = CppSymbol::Kind;
 template <K k>
 using S = CppSymbolImpl<k>;
-void SourceLexer::parse() {
-    auto content = __pre_compiled_lexer->source();
-    OUT NV(content) ENDL;
-    auto YYCURSOR = content.begin();
-    auto last_cursor = YYCURSOR;
-    auto YYMARKER = YYCURSOR;
+int SourceLexer::yylex() {
+    last_cursor = YYCURSOR;
+    /*!re2c
+        re2c:define:YYCTYPE = char;
+        re2c:yyfill:enable = 0;
 
-    bool class_prefix = false;
-    for (;;) {
-        last_cursor = YYCURSOR;
-        /*!re2c
-            re2c:define:YYCTYPE = char;
-            re2c:yyfill:enable = 0;
+        [\n \t]* "class" [\n \t]* {
+            return CLASS;
+        }
 
-            [\n \t]* "class" [\n \t]* {
-                class_prefix = true;
-                continue;
-            }
+        ident {
+            return IDENT;
+        }
+        [\n \t] { return this->yylex(); }
+        [\x00]{
+            return EOF_;
+        }
+        * {
+            return *(last_cursor);
+         }
 
-            ident {
-                if (class_prefix) {
-                    class_prefix = false;
-                    __synbols.emplace_back(new S<K::CLASS>({last_cursor,
-           YYCURSOR}));
-                }
-                continue;
-            }
-
-            [\x00]{
-                break;
-            }
-            * { continue; }
-
-        */
-    }
+    */
+    return EOF_;
 };
 CppSymbol::CppSymbol(Kind kind, string_slice_view identifier)
     : __kind(kind), __identifier(identifier) {}

@@ -26,7 +26,7 @@ enum class AA {
 TEST_F(SourceLexer, Test) {
     constexpr AA a = static_cast<AA>(5);
 
-    source_lexer->parse();
+    source_lexer->yylex();
     for (auto &s : source_lexer->synbols()) {
         OUT NV(s->kind()) NV(s->identifier()) ENDL;
     }

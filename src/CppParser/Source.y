@@ -1,29 +1,32 @@
 %{
+#include "CppParser/SourceLexer.h"
 #include "Source.tab.h"
 #include <stdio.h>
 #include <stdlib.h>
-void yyerror(YYLTYPE *loc,  const char *s);
+#include <iostream>
+void yyerror(YYLTYPE *loc,SourceLexer* lexer,  const char *s);
 %}
 %union {
     int number;
    const char *word;
 }
 %locations
-%token <number> NUMBER
-%token <word> WORD
-%token WHITESPACE
+%parse-param {SourceLexer* lexer}
+%lex-param {SourceLexer* lexer}
+%token IDENT
+%token CCLASS
+%token EOF_
 
 %%
-program: /* empty */
-        | program statement
+program: /* empty */ |
+        program statement |
+        program EOF_ {  std::cout << "End of file" << std::endl; YYACCEPT; }
         ;
 
-statement: NUMBER { printf("Number: %d\n", $1); }
-          | WORD { printf("Word: "); }
-          | WHITESPACE {  }
-          | error {  YYERROR_CALL("Syntax error"); yyclearin; yyerrok; }
+statement: CLASS IDENT ';' { std::cout << "Found class " << std::endl; }
+        | error {  YYERROR_CALL("Syntax error"); yyclearin; yyerrok; }
           ;
 %%
-void yyerror(YYLTYPE *loc, const char *s) {
+void yyerror(YYLTYPE *loc,SourceLexer* lexer,  const char *s) {
     printf("Error: %s\n", s);
 }
