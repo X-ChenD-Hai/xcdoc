@@ -118,8 +118,7 @@ int SourceLexer::yylex() {
     */
     return EOF_;
 };
-CppSymbol::CppSymbol(Kind kind, string_slice_view identifier)
-    : __kind(kind), __identifier(identifier) {}
+
 
 template <>
 CppSymbolImpl<K::CLASS>* SourceLexer::__add_symbol<K::CLASS>(
@@ -127,27 +126,3 @@ CppSymbolImpl<K::CLASS>* SourceLexer::__add_symbol<K::CLASS>(
     __synbols.emplace_back(new S<K::CLASS>(symbol));
     return (S<K::CLASS>*)(__synbols.back().get());
 }
-CppSymbolImpl<CppSymbol::Kind::CLASS>::CppSymbolImpl(
-    string_slice_view identifier,
-    ClassInnerStatementsSequence* statements_sequence)
-    : CppSymbol(CppSymbol::Kind::CLASS, identifier) {}
-void CppSymbolImpl<CppSymbol::Kind::CLASS>::__set_statements_sequence(
-    ClassInnerStatementsSequence* statements_sequence) {
-#ifdef __xcdoc_debug__
-
-    for (auto& seq : statements_sequence->__sub_sequences) {
-        OUT SV(access_policy, seq->__access_policy) ENDL;
-        for (auto& statement : seq->__statements) {
-            OUT VV("statement: ") SV(kind, statement->__kind) ENDL;
-        }
-    }
-
-#endif
-}
-utils::TodoType CppSymbolImpl<CppSymbol::Kind::CLASS>::methods() { TODO; }
-utils::TodoType CppSymbolImpl<CppSymbol::Kind::CLASS>::fields() { TODO; };
-utils::TodoType CppSymbolImpl<CppSymbol::Kind::CLASS>::symbols() { TODO; };
-void ClassInnerSubStatementsSequence::__add_statement(
-    ClassInnerStatement* statement) {
-    __statements.emplace_back(statement);
-};

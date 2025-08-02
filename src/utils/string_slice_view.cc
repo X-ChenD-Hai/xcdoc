@@ -2,7 +2,8 @@
 string_slice_view::iterator::iterator()
     : str(&__EOF), str_queue(nullptr), offset(0) {}
 string_slice_view::iterator::iterator(const std::vector<StrRef> *_q)
-    : str_queue(_q), str(_q->size() ? _q->front().str : &__EOF) {}
+    : str_queue(_q),
+      str(_q ? (_q->size() ? _q->front().str : &__EOF) : &__EOF) {}
 string_slice_view::iterator::iterator(const iterator &other)
     : str(other.str), str_queue(other.str_queue), offset(other.offset) {}
 string_slice_view::iterator &string_slice_view::iterator::operator=(

@@ -1,4 +1,7 @@
 #pragma once
+#include <memory>
+#include <vector>
+
 #include "./CppSymbol.h"
 #include "utils/public.h"
 class ClassInnerStatementsSequence;
@@ -31,7 +34,7 @@ class ClassInnerStatementImpl<ClassInnerStatement::Kind::MEMBER_VARIABLE>
     : public ClassInnerStatement {
     FRINED_LEXERA
    private:
-    utils::ssv_uptr __type;
+    utils::ssv_uptr __type{nullptr};
 
    public:
     ClassInnerStatementImpl(utils::ssv_ptr type, utils::ssv_ptr identifier)
@@ -64,7 +67,26 @@ class ClassInnerStatementsSequence {
     std::vector<std::unique_ptr<ClassInnerSubStatementsSequence>>
         __sub_sequences;
 };
+class ClassInheriteItem {
+    FRINED_LEXERA
+   public:
+    enum class InheritePolicy { PUBLIC, PROTECTED, PRIVATE, DEFAULT };
 
+   private:
+    utils::ssv_uptr __base_class{nullptr};
+    InheritePolicy __inherite_policy{InheritePolicy::DEFAULT};
+    bool __is_virtual{false};
+
+   public:
+    ClassInheriteItem(utils::ssv_ptr base_classes,
+                      InheritePolicy inherite_policy = InheritePolicy::DEFAULT,
+                      bool is_virtual = false)
+        : __base_class(base_classes),
+          __inherite_policy(inherite_policy),
+          __is_virtual(is_virtual) {}
+};
+using ClassInheriteList = std::vector<std::unique_ptr<ClassInheriteItem>>;
+using ClassInheriteList_ptr = ClassInheriteList*;
 template <>
 class CppSymbolImpl<CppSymbol::Kind::CLASS> : public CppSymbol {
     FRINED_LEXERA
@@ -77,6 +99,8 @@ class CppSymbolImpl<CppSymbol::Kind::CLASS> : public CppSymbol {
     utils::TodoType symbols();
 
    private:
-    void __set_statements_sequence(
+    CppSymbolImpl<CppSymbol::Kind::CLASS>* __set_statements_sequence(
         ClassInnerStatementsSequence* statements_sequence);
+    CppSymbolImpl<CppSymbol::Kind::CLASS>* __set_inherite_list(
+        ClassInheriteList_ptr inherite_list);
 };

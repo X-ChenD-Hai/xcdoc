@@ -15,7 +15,7 @@ class string_slice_view {
         friend class string_slice_view;
         constexpr static const char __EOF = '\x00';
         const char *str{&__EOF};
-        const std::vector<StrRef> *str_queue;
+        const std::vector<StrRef> *str_queue{nullptr};
         size_t offset{0};
 
        public:

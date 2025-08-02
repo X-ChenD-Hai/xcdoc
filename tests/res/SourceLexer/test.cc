@@ -1,6 +1,6 @@
 class C {};
 class B {};
-class A : public B, C {
+class A : public B,oo C {
     int a;
 
    public:

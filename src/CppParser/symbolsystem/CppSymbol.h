@@ -35,8 +35,8 @@ class CppSymbol {
 
    public:
     CppSymbol() = delete;
-    string_slice_view identifier() const { return __identifier; }
-    Kind kind() const { return __kind; }
+    inline string_slice_view identifier() const { return __identifier; }
+    inline Kind kind() const { return __kind; }
 };
 
 template <CppSymbol::Kind k>

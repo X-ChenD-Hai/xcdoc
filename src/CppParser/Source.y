@@ -18,6 +18,8 @@ void yyerror(YYLTYPE *loc,SourceLexer* lexer,  const char *s);
    ClassInnerStatement* class_inner_statement;
    ClassInnerSubStatementsSequence* class_inner_sub_statements_sequence;
    ClassInnerStatementsSequence* class_inner_statements_sequence;
+   ClassInheriteItem* class_inherit_item;
+   ClassInheriteList_ptr class_inherit_list;
 }
 %locations
 %parse-param {SourceLexer* lexer}
@@ -29,38 +31,103 @@ void yyerror(YYLTYPE *loc,SourceLexer* lexer,  const char *s);
 %type <class_inner_sub_statements_sequence> class_inner_sub_statements_seq
 %type <class_inner_statements_sequence> class_inner_statement_seq
 %type <class_inner_statement> class_inner_statement
+%type <class_inherit_item> class_inherit_item
+%type <class_inherit_list> class_inherit_list
 %%
 program: /* empty */ |
-        program statement |
-        program ident_parser |
-        program EOF_ {  std::cout << "End of file" << std::endl; YYACCEPT; }
+        program statement 
+        | program ident_parser 
+        | program EOF_ {  
+                std::cout << "End of file" << std::endl;
+                YYACCEPT; }
         ;
-statement: CLASS_ IDENT ';' { std::cout << "Found class "<< *$2 << std::endl; }
-        | CLASS_ IDENT class_inherit_list '{' class_inner_statement_seq '}' ';' {  lexer->__add_symbol<CppSymbol::Kind::CLASS>($2)->__set_statements_sequence($5); std::cout << "Found class define "<< std::endl; }
+statement:
+        CLASS_ IDENT ';' {
+                lexer->__add_symbol<CppSymbol::Kind::CLASS>($2); 
+                std::cout << "Found class "<< *$2 << std::endl; }
+        | CLASS_ IDENT class_inherit_list '{' class_inner_statement_seq '}' ';' {  
+                lexer->__add_symbol<CppSymbol::Kind::CLASS>($2)->__set_inherite_list($3)->__set_statements_sequence($5);
+                 std::cout << "Found class define "<< std::endl; }
         | error {  YYERROR_CALL("Statement error"); yyclearin; yyerrok; }
-class_inherit_item: IDENT { std::cout << "Found class inherit "<< *$1 << std::endl; }
-                | PUBLIC_ IDENT { std::cout << "Found class inherit "<< *$2 << std::endl; }
-                | PROTECTED_ IDENT { std::cout << "Found class inherit "<< *$2 << std::endl; }
-                | PRIVATE_ IDENT { std::cout << "Found class inherit "<< *$2 << std::endl; }
-                | error {  YYERROR_CALL("class_inherit_item error"); yyclearin; yyerrok; }
-class_inherit_list: /* empty */ | ':' class_inherit_item | class_inherit_list ',' class_inherit_item
-class_inner_statement: IDENT IDENT ';' { $$ = new CISI<CISK::MEMBER_VARIABLE>($1,$2); std::cout << "Found inner statement "<< *$1 << " " << *$2 << std::endl; }        ;
-                       | error {  YYERROR_CALL("class_inner_statement error"); yyclearin; yyerrok; }
+class_inherit_item: 
+        IDENT {
+                $$ = new ClassInheriteItem($1);
+                std::cout << "Found class inherit "<< *$1 << std::endl; }
+        | PUBLIC_ IDENT { 
+                $$ = new ClassInheriteItem($2, ClassInheriteItem::InheritePolicy::PUBLIC);
+                std::cout << "Found class inherit "<< *$2 << std::endl; }
+        | PROTECTED_ IDENT {
+                $$ = new ClassInheriteItem($2, ClassInheriteItem::InheritePolicy::PROTECTED);
+                std::cout << "Found class inherit "<< *$2 << std::endl; }
+        | PRIVATE_ IDENT {
+                $$ = new ClassInheriteItem($2, ClassInheriteItem::InheritePolicy::PRIVATE); 
+                std::cout << "Found class inherit "<< *$2 << std::endl; }
+        | error { 
+                YYERROR_CALL("class_inherit_item error"); yyclearin;
+                yyerrok; }
+class_inherit_list: /* empty */ { $$ = nullptr; } 
+        | ':' class_inherit_item { 
+                std::cout<<"insert " << $2 <<std::endl; 
+                $$ = new ClassInheriteList(); 
+                $$->emplace_back($2); 
+                std::cout << "Found class inherit list "<< std::endl; }
+        | class_inherit_list ',' class_inherit_item {
+                std::cout<<"insert " << $3 << std::endl; 
+                $1->emplace_back($3); $$ = $1; 
+                std::cout << "Found class inherit list "<< std::endl; }
+        | error {
+                if($$->size() > 0) std::cout << $$ <<std::endl;
+                YYERROR_CALL("class_inherit_list error"); 
+                yyclearin; yyerrok; }
+class_inner_statement: 
+        IDENT IDENT ';' { 
+                $$ = new CISI<CISK::MEMBER_VARIABLE>($1,$2); 
+                std::cout << "Found inner statement "<< *$1 << " " << *$2 << std::endl; }        ;
+        | error {  YYERROR_CALL("class_inner_statement error"); yyclearin; yyerrok; }
                        ;
-class_inner_sub_statements_seq: class_inner_statement { $$ = new CISSS(); $$->__statements.emplace_back($1); std::cout << "Found inner sub statement seq "<< std::endl; }
-                            | PUBLIC_ ':' class_inner_statement { $$ = new CISSS(); $$->__access_policy = CISSS_AP::PUBLIC; $$->__statements.emplace_back($3); std::cout << "Found inner sub statement seq "<< std::endl; }
-                            | PROTECTED_ ':' class_inner_statement { $$ = new CISSS(); $$->__access_policy = CISSS_AP::PROTECTED; $$->__statements.emplace_back($3); std::cout << "Found inner sub statement seq "<< std::endl; }
-                            | PRIVATE_ ':' class_inner_statement { $$ = new CISSS(); $$->__access_policy = CISSS_AP::PRIVATE; $$->__statements.emplace_back($3); std::cout << "Found inner sub statement seq "<< std::endl; }
-                            | class_inner_sub_statements_seq class_inner_statement{ $1->__statements.emplace_back($2); $$ = $1; std::cout << "Found inner sub statement seq "<< std::endl; }
-                            | error {  YYERROR_CALL("class_inner_sub_statements_seq error"); yyclearin; yyerrok; }
-                            ;
-class_inner_statement_seq: { $$ = new CISS(); }
-                            | class_inner_statement_seq class_inner_sub_statements_seq {$$ = $1; $1->__sub_sequences.emplace_back($2); std::cout << "Found inner statement seq "<< std::endl; }
-                            | error {  YYERROR_CALL("class_inner_statement_seq error"); yyclearin; yyerrok; }
-                            ;
-ident_parser: IDENT OP_SCOPE_RESOLUTION IDENT { std::cout << "Found ident "<< *$1 << "::" << *$3 << std::endl; }
-                            | error {  YYERROR_CALL("ident_parser error"); yyclearin; yyerrok; }
-                            ;
+class_inner_sub_statements_seq: 
+        class_inner_statement { 
+                $$ = new CISSS(); 
+                $$->__statements.emplace_back($1); 
+                std::cout << "Found inner sub statement seq "<< std::endl; }
+        | PUBLIC_ ':' class_inner_statement { 
+                $$ = new CISSS(); 
+                $$->__access_policy = CISSS_AP::PUBLIC; 
+                $$->__statements.emplace_back($3); 
+                std::cout << "Found inner sub statement seq "<< std::endl; }
+        | PROTECTED_ ':' class_inner_statement { 
+                $$ = new CISSS(); 
+                $$->__access_policy = CISSS_AP::PROTECTED; 
+                $$->__statements.emplace_back($3); 
+                std::cout << "Found inner sub statement seq "<< std::endl; }
+        | PRIVATE_ ':' class_inner_statement { 
+                $$ = new CISSS(); 
+                $$->__access_policy = CISSS_AP::PRIVATE; 
+                $$->__statements.emplace_back($3); 
+                std::cout << "Found inner sub statement seq "<< std::endl; }
+        | class_inner_sub_statements_seq class_inner_statement{ 
+                $1->__statements.emplace_back($2); 
+                $$ = $1; 
+                std::cout << "Found inner sub statement seq "<< std::endl; }
+        | error {
+                YYERROR_CALL("class_inner_sub_statements_seq error"); 
+                yyclearin; yyerrok; }
+        ;
+class_inner_statement_seq: { 
+                $$ = new CISS(); }
+        | class_inner_statement_seq class_inner_sub_statements_seq {
+                $$ = $1; 
+                $1->__sub_sequences.emplace_back($2); 
+                std::cout << "Found inner statement seq "<< std::endl; }
+        | error {  
+                YYERROR_CALL("class_inner_statement_seq error");
+                yyclearin; yyerrok; }
+        ;
+ident_parser: 
+        IDENT OP_SCOPE_RESOLUTION IDENT { 
+                std::cout << "Found ident "<< *$1 << "::" << *$3 << std::endl; }
+        | error {  YYERROR_CALL("ident_parser error"); yyclearin; yyerrok; }
+        ;
 %%
 void yyerror(YYLTYPE *loc,SourceLexer* lexer,  const char *s) {
     printf("Error: %s\n", s);

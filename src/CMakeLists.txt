@@ -31,6 +31,8 @@ set(CPP_PARSER_SOURCE
     CppParser/CompileSystem.cc
     CppParser/CompileUnit.cc
     CppParser/CommandParserImpl.cc
+    CppParser/symbolsystem/ClassSymbolImpl.cc
+    CppParser/symbolsystem/CppSymbol.cc
 )
 
 target_sources(xcdoc_lib PRIVATE
