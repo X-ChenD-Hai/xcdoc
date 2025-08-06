@@ -2,31 +2,31 @@
 #define COMMAND_H
 #include <CLI/CLI.hpp>
 template <typename T>
-constexpr auto __COMMAND_NAME = "";
+constexpr auto kCOMMAND_NAME = "";
 template <typename T>
-constexpr auto __COMMAND_DESCRIPTION = "";
+constexpr auto kCOMMAND_DESCRIPTION = "";
 template <typename T>
-constexpr const char* __COMMAND_ALIAS[] = {};
+constexpr const char* kCOMMAND_ALIAS[] = {};
 class Command {
     friend class CommandController;
 
    private:
-    CLI::App* __app;
-    std::vector<std::unique_ptr<Command>> __commands;
+    CLI::App* app_;
+    std::vector<std::unique_ptr<Command>> commands_;
 
    public:
-    inline CLI::App* app() const { return __app; }
-    Command(CLI::App* app) : __app(app) {}
+    inline CLI::App* app() const { return app_; }
+    Command(CLI::App* app) : app_(app) {}
     template <typename T, class... Args>
         requires std::derived_from<T, Command>
     T* add_subcommand(Args&&... args) {
         auto _a =
-            app()->add_subcommand(__COMMAND_NAME<T>, __COMMAND_DESCRIPTION<T>);
-        for (auto alias : __COMMAND_ALIAS<T>) {
+            app()->add_subcommand(kCOMMAND_NAME<T>, kCOMMAND_DESCRIPTION<T>);
+        for (auto alias : kCOMMAND_ALIAS<T>) {
             _a->alias(alias);
         }
         auto cmd = new T(_a, std::forward<Args>(args)...);
-        __commands.emplace_back(cmd);
+        commands_.emplace_back(cmd);
         return cmd;
     }
     virtual int exec() = 0;
@@ -39,10 +39,10 @@ class Command {
 
 class CommandController {
    private:
-    int __argc_;
-    char** __argv_;
-    std::unique_ptr<Command> __root_command;
-    std::unique_ptr<CLI::App> __app;
+    int argc_;
+    char** argv_;
+    std::unique_ptr<Command> root_command_;
+    std::unique_ptr<CLI::App> app_;
 
    public:
     int exec();
@@ -50,20 +50,20 @@ class CommandController {
     template <typename T, class... Args>
         requires std::derived_from<T, Command>
     void setRootCommand(Args&&... args) {
-        __root_command =
-            std::make_unique<T>(__app.get(), std::forward<Args>(args)...);
-        __app->description(__COMMAND_DESCRIPTION<T>);
+        root_command_ =
+            std::make_unique<T>(app_.get(), std::forward<Args>(args)...);
+        app_->description(kCOMMAND_DESCRIPTION<T>);
     }
     ~CommandController() {}
 };
 
-#define DECLARE_COMMAND(Command, NAME, DESCRIPTION)       \
+#define XCDOC_DECLARE_COMMAND(Command, NAME, DESCRIPTION) \
     template <>                                           \
-    constexpr inline auto __COMMAND_NAME<Command> = NAME; \
+    constexpr inline auto kCOMMAND_NAME<Command> = NAME;  \
     template <>                                           \
-    constexpr inline auto __COMMAND_DESCRIPTION<Command> = DESCRIPTION;
+    constexpr inline auto kCOMMAND_DESCRIPTION<Command> = DESCRIPTION;
 
-#define DECLARE_ALIAS(Command, ALIAS...) \
-    template <>                          \
-    constexpr inline const char* __COMMAND_ALIAS<Command>[] = {ALIAS};
+#define XCDOC_DECLARE_ALIAS(Command, ALIAS...) \
+    template <>                                \
+    constexpr inline const char* kCOMMAND_ALIAS<Command>[] = {ALIAS};
 #endif  // COMMAND_H
