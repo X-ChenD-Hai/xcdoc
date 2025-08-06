@@ -9,33 +9,32 @@
 #include "PreCompiledLexer.h"
 
 using json = nlohmann::json;
-CompileUnit::CompileUnit(const std::string& command) : __command(command) {
-    auto parser = CommandParser::parse(__command);
-    OUT SV(command, __command) ENDL;
+CompileUnit::CompileUnit(const std::string& command) : command_(command) {
+    auto parser = CommandParser::parse(command_);
+    OUT SV(command, command_) ENDL;
     namespace fs = std::filesystem;
     if (parser) {
-        __source_file = parser->input_files().front();
-        __includes_path.push_back(
-            fs::path(__source_file).parent_path().string());
-        __includes_path.append_range(parser->include_paths());
-        __ext_macros = parser->macros();
-        __output_files = parser->output_files();
-        __source = utils::read_file(__source_file);
-        __pre_lexer = std::make_unique<PreCompiledLexer>(&__source, this);
-        for (auto i : __includes_path) {
+        source_file_ = parser->input_files().front();
+        includes_path_.push_back(fs::path(source_file_).parent_path().string());
+        includes_path_.append_range(parser->include_paths());
+        ext_macros_ = parser->macros();
+        output_files_ = parser->output_files();
+        source_ = utils::read_file(source_file_);
+        pre_lexer_ = std::make_unique<PreCompiledLexer>(&source_, this);
+        for (auto i : includes_path_) {
             OUT SV(include_path, i) ENDL;
         }
-        OUT NV(__source_file) ENDL;
-        __pre_lexer->source();
+        OUT NV(source_file_) ENDL;
+        pre_lexer_->source();
     }
 }
 PreCompiledLexer* CompileUnit::attach_lexer(const std::string& file_name,
                                             bool is_absolute_path) {
     namespace fs = std::filesystem;
-    auto it = __attached_lexers.find(file_name);
+    auto it = attached_lexers_.find(file_name);
 
     OUT SV(search_file, file_name) ENDL;
-    if (it == __attached_lexers.end()) {
+    if (it == attached_lexers_.end()) {
         if (is_absolute_path) {
             OUT VV("\tabsolute path") ENDL;
             if (auto l = _attach_lexer(fs::path(file_name), file_name); l) {
@@ -45,7 +44,7 @@ PreCompiledLexer* CompileUnit::attach_lexer(const std::string& file_name,
             }
             return nullptr;
         }
-        for (auto& ps : __includes_path) {
+        for (auto& ps : includes_path_) {
             OUT SV(\tsearch_on, fs::path(ps) / file_name) ENDL;
             if (auto l = _attach_lexer(fs::path(ps) / file_name, file_name);
                 l) {
@@ -66,9 +65,9 @@ PreCompiledLexer* CompileUnit::_attach_lexer(const std::filesystem::path& ps,
     namespace fs = std::filesystem;
     if (fs::is_regular_file(ps)) {
         auto content = new std::string(utils::read_file((ps.string())));
-        __include_files.emplace_back(content);
+        include_files_.emplace_back(content);
         auto lexer = std::make_unique<PreCompiledLexer>(content, this);
-        return __attached_lexers.emplace(key, std::move(lexer))
+        return attached_lexers_.emplace(key, std::move(lexer))
             .first->second.get();
     }
     return nullptr;

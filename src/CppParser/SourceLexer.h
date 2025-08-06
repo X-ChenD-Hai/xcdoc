@@ -1,43 +1,32 @@
 #pragma once
 #include "CppParser/PreCompiledLexer.h"
+#include "CppParser/symbolsystem/CppSymbol.h"
 #include "utils/public.h"
+#include "utils/string_slice_view.h"
 
-class CppSymbol {
-   public:
-    enum class Kind {
-        UNKNOWN,
-        CLASS,
-    };
-
-   protected:
-    template <Kind k>
-    friend class CppSymbolImpl;
-    Kind __kind = Kind::UNKNOWN;
-    CppSymbol() = default;
-};
-template <CppSymbol::Kind k = CppSymbol::Kind::UNKNOWN>
-class CppSymbolImpl;
-
-template <>
-class CppSymbolImpl<CppSymbol::Kind::UNKNOWN> : public CppSymbol {
-   private:
-   public:
-    std::string name() const { TODO; };
-    const std::string& kind() const { TODO; };
-    template <Kind _k>
-    auto& __as() {
-        return static_cast<CppSymbolImpl<_k>>(*this);
-    }
-    template <class T>
-    bool is() const noexcept {
-        TODO;
-    }
-};
-
+// using symbol_list_t = std::vector<std::unique_ptr<CppSymbol>>;
+using symbol_list_t = std::vector<std::shared_ptr<CppSymbol>>;
 class SourceLexer {
-    // PreCompiledLexer __pre_compiled_lexer;
-    PreCompiledLexer* __pre_compiled_lexer;
+    FRINED_LEXERA
+   private:
+    PreCompiledLexer* pre_compiled_lexer_;
+    symbol_list_t synbols_;
+    string_slice_view::iterator YYCURSOR;
+    string_slice_view::iterator YYMARKER;
+    string_slice_view::iterator last_cursor;
+    const string_slice_view* content_;
+
+   private:
+    template <CppSymbol::Kind k>
+    CppSymbolImpl<k>* __add_symbol(const string_slice_view& symbol);
+    template <CppSymbol::Kind k>
+    CppSymbolImpl<k>* __add_symbol(const string_slice_view* symbol) {
+        return __add_symbol<k>(*symbol);
+    }
 
    public:
     SourceLexer(PreCompiledLexer* pre_compiled_lexer);
+
+    symbol_list_t synbols();
+    int yylex();
 };

@@ -123,26 +123,26 @@ class PreCompiledLexer {
     NextAction __handle();
 
    private:
-    const char *start;
+    const char *start_;
     const char *YYCURSOR;
     const char *YYMARKER = YYCURSOR;
-    const char *last_cursor = YYCURSOR;
-    const char *limit = YYCURSOR + __content->size();
-    const char *pre_cursor;
-    const std::string *__content;
-    CompileUnit *__compile_unit{nullptr};
-    std::vector<PreCompiledLexer *> __include_lexers;
-    string_slice_view __source;
-    std::unordered_map<std::string_view, size_t> __macro_define_map;
-    std::vector<IncludeBlock> __include_blocks;
-    std::vector<MacroDefineBlock> __macro_define_blocks;
-    std::vector<PreCompiledBlock> __string_blocks;
-    std::vector<PreCompiledBlock> __line_comment_blocks;
-    std::vector<PreCompiledBlock> __block_comment_blocks;
-    std::vector<Ident> __macro_idents;
-    std::vector<ConditonBlock> __condition_blocks;
-    std::vector<size_t> __line_index{0};
-    State __state;
+    const char *last_cursor_ = YYCURSOR;
+    const char *limit_ = YYCURSOR + content_->size();
+    const char *pre_cursor_;
+    const std::string *content_;
+    CompileUnit *compile_unit_{nullptr};
+    std::vector<PreCompiledLexer *> include_lexers_;
+    string_slice_view source_;
+    std::unordered_map<std::string_view, size_t> macro_define_map_;
+    std::vector<IncludeBlock> include_blocks_;
+    std::vector<MacroDefineBlock> macro_define_blocks_;
+    std::vector<PreCompiledBlock> string_blocks_;
+    std::vector<PreCompiledBlock> line_comment_blocks_;
+    std::vector<PreCompiledBlock> block_comment_blocks_;
+    std::vector<Ident> macro_idents_;
+    std::vector<ConditonBlock> condition_blocks_;
+    std::vector<size_t> line_index_{0};
+    State state_;
 
    public:
     PreCompiledLexer(const std::string *content,
@@ -152,39 +152,39 @@ class PreCompiledLexer {
     const char *next();
     std::pair<size_t, size_t> line_and_column(size_t pos) const;
     inline const std::vector<IncludeBlock> &include_blocks() const {
-        return __include_blocks;
+        return include_blocks_;
     }
     inline const std::vector<MacroDefineBlock> &macro_define_blocks() const {
-        return __macro_define_blocks;
+        return macro_define_blocks_;
     }
     inline const std::vector<PreCompiledBlock> &string_blocks() const {
-        return __string_blocks;
+        return string_blocks_;
     }
     inline const std::vector<PreCompiledBlock> &line_comment_blocks() const {
-        return __line_comment_blocks;
+        return line_comment_blocks_;
     }
     inline const std::vector<PreCompiledBlock> &block_comment_blocks() const {
-        return __block_comment_blocks;
+        return block_comment_blocks_;
     }
     inline const std::unordered_map<std::string_view, size_t> &
     macro_define_map() const {
-        return __macro_define_map;
+        return macro_define_map_;
     }
     inline const std::vector<Ident> &macro_idents() const {
-        return __macro_idents;
+        return macro_idents_;
     }
     inline const std::vector<ConditonBlock> &condition_blocks() const {
-        return __condition_blocks;
+        return condition_blocks_;
     }
-    inline const std::string &content() const { return *__content; }
+    inline const std::string &content() const { return *content_; }
 
     inline size_t pos(const char *ptr) const {
-        auto tmp = ptr - start;
-        if (tmp < 0 || tmp > __content->size()) {
-            return __content->size();
+        auto tmp = ptr - start_;
+        if (tmp < 0 || tmp > content_->size()) {
+            return content_->size();
         }
         return tmp;
     }
     const string_slice_view &source();
-    const string_slice_view &source() const { return __source; };
+    const string_slice_view &source() const { return source_; };
 };

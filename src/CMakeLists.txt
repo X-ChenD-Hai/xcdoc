@@ -17,14 +17,22 @@ re2c_generate(
     DEPS
     ${CMAKE_CURRENT_SOURCE_DIR}/CppParser/def.re
 )
+yacc_generate(
+    CPP_PARSER_YACC_SOURCES
+    CPP_PARSER_YACC_HEADERS
+    FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/CppParser/Source.y
+)
+
 set(CPP_PARSER_SOURCE
     # CppParser
-    # CppParser/PreCompiledLexer.re.cc
-    # CppParser/MacroExpandMacroHelper.re.cc
+    ${CPP_PARSER_YACC_SOURCES}
     ${CPP_PARSER_RE2C_SOURCES}
     CppParser/CompileSystem.cc
     CppParser/CompileUnit.cc
     CppParser/CommandParserImpl.cc
+    CppParser/symbolsystem/ClassSymbolImpl.cc
+    CppParser/symbolsystem/CppSymbol.cc
 )
 
 target_sources(xcdoc_lib PRIVATE
