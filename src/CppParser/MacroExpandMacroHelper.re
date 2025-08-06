@@ -5,7 +5,7 @@
 /*!include:re2c "def.re" */
 
 bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
-    auto &macro = lexer->__macro_define_blocks[ident.macro_id];
+    auto &macro = lexer_->macro_define_blocks_[ident.macro_id];
     if (macro.length == macro.body_start) return false;
 
     string_slice_view str;
@@ -74,55 +74,55 @@ bool MacroExpandMacroHelper::parser(PreCompiledLexer::Ident &ident) {
             }
         }
     } while (macro_idents.size());
-    auto &q = lexer->__state.macro_expand_queue;
+    auto &q = lexer_->state_.macro_expand_queue;
     auto &sq = str.string_refs();
-    auto _last_cursor = lexer->YYCURSOR;
+    auto _last_cursor = lexer_->YYCURSOR;
     for (size_t i = 1; i < sq.size(); ++i) {
         auto &r = sq[i - 1];
         auto &nr = sq[i];
         q.emplace(r.str + r.len, nr.str);
     }
     if (sq.size()) {
-        lexer->pre_cursor = sq.front().str;
+        lexer_->pre_cursor_ = sq.front().str;
         auto &er = sq.back();
-        q.emplace(er.str + er.len, lexer->YYCURSOR);
+        q.emplace(er.str + er.len, lexer_->YYCURSOR);
     }
     return true;
 }
 void MacroExpandMacroHelper::handle_ident() {
-    if (__state.macro_parma) return;
+    if (state_.macro_parma) return;
     auto ident = string_slice_view(last_cursor, YYCURSOR).to_string();
-    if (auto it = lexer->macro_define_map().find(ident);
-        it != lexer->macro_define_map().end()) {
+    if (auto it = lexer_->macro_define_map().find(ident);
+        it != lexer_->macro_define_map().end()) {
         macro_idents.emplace_back(last_cursor, YYCURSOR, it->second,
                                   std::vector<Parma>{});
-        if (lexer->__macro_define_blocks[it->second].is_function) {
-            __state.macro_parma = true;
+        if (lexer_->macro_define_blocks_[it->second].is_function) {
+            state_.macro_parma = true;
         }
     }
 }
 void MacroExpandMacroHelper::handle_right() {
-    if (__state.macro_parma) {
-        if (--__state.parenthesis_count == 0) {
+    if (state_.macro_parma) {
+        if (--state_.parenthesis_count == 0) {
             macro_idents.back().real_params.emplace_back(
-                __state.last_param_start, last_cursor);
+                state_.last_param_start, last_cursor);
             macro_idents.back().end = YYCURSOR;
-            __state.macro_parma = false;
+            state_.macro_parma = false;
         }
     }
 }
 void MacroExpandMacroHelper::handle_left() {
-    if (__state.macro_parma) {
-        if (++__state.parenthesis_count == 1) {
-            __state.last_param_start = YYCURSOR;
+    if (state_.macro_parma) {
+        if (++state_.parenthesis_count == 1) {
+            state_.last_param_start = YYCURSOR;
         }
     }
 }
 void MacroExpandMacroHelper::handle_comma() {
-    if (__state.parenthesis_count == 1) {
-        macro_idents.back().real_params.emplace_back(__state.last_param_start,
+    if (state_.parenthesis_count == 1) {
+        macro_idents.back().real_params.emplace_back(state_.last_param_start,
                                                      last_cursor);
-        __state.last_param_start = YYCURSOR;
+        state_.last_param_start = YYCURSOR;
     }
 }
 void MacroExpandMacroHelper::expand_macro(string_slice_view *str) {
@@ -133,7 +133,7 @@ void MacroExpandMacroHelper::expand_macro(string_slice_view *str) {
         res.push(last_start, ident.start);
         OUT NV(res) ENDL;
         last_start = ident.end;
-        auto &macro = lexer->__macro_define_blocks[ident.macro_id];
+        auto &macro = lexer_->macro_define_blocks_[ident.macro_id];
         if (macro.length == macro.body_start) continue;
         auto _last_start = macro.start + macro.body_start;
         for (auto &ref : macro.params_refs) {

@@ -13,6 +13,10 @@ using CISSS = ClassInnerSubStatementsSequence;
 using CISSS_AP = ClassInnerSubStatementsSequence::AccessPolicy;
 void yyerror(YYLTYPE *loc,SourceLexer* lexer,  const char *s);
 %}
+%code requires {
+#include "CppParser/SourceLexer.h"
+}
+
 %union {
    string_slice_view* ident;
    ClassInnerStatement* class_inner_statement;
@@ -92,17 +96,17 @@ class_inner_sub_statements_seq:
                 std::cout << "Found inner sub statement seq "<< std::endl; }
         | PUBLIC_ ':' class_inner_statement { 
                 $$ = new CISSS(); 
-                $$->__access_policy = CISSS_AP::PUBLIC; 
+                $$->access_policy_ = CISSS_AP::PUBLIC; 
                 $$->__statements.emplace_back($3); 
                 std::cout << "Found inner sub statement seq "<< std::endl; }
         | PROTECTED_ ':' class_inner_statement { 
                 $$ = new CISSS(); 
-                $$->__access_policy = CISSS_AP::PROTECTED; 
+                $$->access_policy_ = CISSS_AP::PROTECTED; 
                 $$->__statements.emplace_back($3); 
                 std::cout << "Found inner sub statement seq "<< std::endl; }
         | PRIVATE_ ':' class_inner_statement { 
                 $$ = new CISSS(); 
-                $$->__access_policy = CISSS_AP::PRIVATE; 
+                $$->access_policy_ = CISSS_AP::PRIVATE; 
                 $$->__statements.emplace_back($3); 
                 std::cout << "Found inner sub statement seq "<< std::endl; }
         | class_inner_sub_statements_seq class_inner_statement{ 

@@ -7,8 +7,8 @@
 
 class CommandParser {
    private:
-    std::string_view __command;
-    std::vector<std::string_view> __tokens;
+    std::string_view command_;
+    std::vector<std::string_view> tokens_;
 
    public:
     static std::unique_ptr<CommandParser> parse(std::string_view command);
@@ -20,13 +20,13 @@ class CommandParser {
    public:
     CommandParser(std::string_view command,
                   std::vector<std::string_view> tokens)
-        : __command(command), __tokens(tokens) {}
+        : command_(command), tokens_(tokens) {}
     virtual ~CommandParser() = default;
-    inline std::vector<std::string_view> tokens() const { return __tokens; }
-    std::string_view command() const { return __command; }
+    inline std::vector<std::string_view> tokens() const { return tokens_; }
+    std::string_view command() const { return command_; }
     inline void set_command(std::string_view command) {
-        __command = command;
-        __tokens = __tokenize(__command);
+        command_ = command;
+        tokens_ = __tokenize(command_);
     }
     virtual std::vector<std::pair<std::string, std::string>> macros() const = 0;
     virtual std::vector<std::pair<std::string, std::string>> options()

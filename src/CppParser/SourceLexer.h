@@ -1,6 +1,4 @@
 #pragma once
-#include <linux/limits.h>
-
 #include "CppParser/PreCompiledLexer.h"
 #include "CppParser/symbolsystem/CppSymbol.h"
 #include "utils/public.h"
@@ -11,12 +9,12 @@ using symbol_list_t = std::vector<std::shared_ptr<CppSymbol>>;
 class SourceLexer {
     FRINED_LEXERA
    private:
-    PreCompiledLexer* __pre_compiled_lexer;
-    symbol_list_t __synbols;
+    PreCompiledLexer* pre_compiled_lexer_;
+    symbol_list_t synbols_;
     string_slice_view::iterator YYCURSOR;
     string_slice_view::iterator YYMARKER;
     string_slice_view::iterator last_cursor;
-    const string_slice_view* __content;
+    const string_slice_view* content_;
 
    private:
     template <CppSymbol::Kind k>

@@ -12,15 +12,15 @@ int yyparse(SourceLexer* lexer);
 int yylex(SourceLexer* lexer) { return lexer->yylex(); }
 
 SourceLexer::SourceLexer(PreCompiledLexer* pre_compiled_lexer)
-    : __pre_compiled_lexer(pre_compiled_lexer) {
-    __content = &__pre_compiled_lexer->source();
-    YYCURSOR = __content->begin();
+    : pre_compiled_lexer_(pre_compiled_lexer) {
+    content_ = &pre_compiled_lexer_->source();
+    YYCURSOR = content_->begin();
     last_cursor = YYCURSOR;
     YYMARKER = YYCURSOR;
-    OUT NV(*__content) ENDL;
+    OUT NV(*content_) ENDL;
     yyparse(this);
 }
-symbol_list_t SourceLexer::synbols() { return __synbols; };
+symbol_list_t SourceLexer::synbols() { return synbols_; };
 using K = CppSymbol::Kind;
 template <K k>
 using S = CppSymbolImpl<k>;
@@ -119,10 +119,9 @@ int SourceLexer::yylex() {
     return EOF_;
 };
 
-
 template <>
 CppSymbolImpl<K::CLASS>* SourceLexer::__add_symbol<K::CLASS>(
     const string_slice_view& symbol) {
-    __synbols.emplace_back(new S<K::CLASS>(symbol));
-    return (S<K::CLASS>*)(__synbols.back().get());
+    synbols_.emplace_back(new S<K::CLASS>(symbol));
+    return (S<K::CLASS>*)(synbols_.back().get());
 }

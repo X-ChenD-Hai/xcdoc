@@ -5,7 +5,7 @@ CppSymbolImpl<CppSymbol::Kind::CLASS>::__set_statements_sequence(
 #ifdef __xcdoc_debug__
 
     for (auto& seq : statements_sequence->__sub_sequences) {
-        OUT SV(access_policy, seq->__access_policy) ENDL;
+        OUT SV(access_policy, seq->access_policy_) ENDL;
         for (auto& statement : seq->__statements) {
             OUT VV("statement: ") SV(kind, statement->__kind) ENDL;
         }

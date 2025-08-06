@@ -34,13 +34,13 @@ class ClassInnerStatementImpl<ClassInnerStatement::Kind::MEMBER_VARIABLE>
     : public ClassInnerStatement {
     FRINED_LEXERA
    private:
-    utils::ssv_uptr __type{nullptr};
+    utils::ssv_uptr type_{nullptr};
 
    public:
     ClassInnerStatementImpl(utils::ssv_ptr type, utils::ssv_ptr identifier)
         : ClassInnerStatement(ClassInnerStatement::Kind::MEMBER_VARIABLE,
                               identifier),
-          __type(type) {}
+          type_(type) {}
 };
 class ClassInnerSubStatementsSequence {
     FRINED_LEXERA
@@ -53,17 +53,15 @@ class ClassInnerSubStatementsSequence {
 
    private:
     std::vector<std::unique_ptr<ClassInnerStatement>> __statements;
-    AccessPolicy __access_policy = AccessPolicy::PRIVATE;
+    AccessPolicy access_policy_ = AccessPolicy::PRIVATE;
 
     void __add_statement(ClassInnerStatement* statement);
     void __set_access_policy(AccessPolicy access_policy) {
-        __access_policy = access_policy;
+        access_policy_ = access_policy;
     }
 };
 class ClassInnerStatementsSequence {
     FRINED_LEXERA
-    template <ClassInnerStatement::Kind k>
-    class CppSymbolImpl;
     std::vector<std::unique_ptr<ClassInnerSubStatementsSequence>>
         __sub_sequences;
 };

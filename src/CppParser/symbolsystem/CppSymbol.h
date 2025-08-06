@@ -29,14 +29,14 @@ class CppSymbol {
    private:
     template <Kind k>
     friend class CppSymbolImpl;
-    Kind __kind = Kind::UNKNOWN;
-    string_slice_view __identifier;
+    Kind kind_ = Kind::UNKNOWN;
+    string_slice_view identifier_;
     CppSymbol(Kind kind, string_slice_view identifier);
 
    public:
     CppSymbol() = delete;
-    inline string_slice_view identifier() const { return __identifier; }
-    inline Kind kind() const { return __kind; }
+    inline string_slice_view identifier() const { return identifier_; }
+    inline Kind kind() const { return kind_; }
 };
 
 template <CppSymbol::Kind k>

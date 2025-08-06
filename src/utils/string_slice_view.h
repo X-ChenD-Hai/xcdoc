@@ -32,7 +32,7 @@ class string_slice_view {
     };
 
    private:
-    std::vector<StrRef> str_queue;
+    std::vector<StrRef> str_queue_;
 
    public:
     string_slice_view() {}
@@ -56,12 +56,12 @@ class string_slice_view {
     iterator earse(iterator start, iterator end);
     void replace(const iterator &start, const iterator &end,
                  const iterator &new_start, const iterator &new_end);
-    inline const std::vector<StrRef> &string_refs() const { return str_queue; }
+    inline const std::vector<StrRef> &string_refs() const { return str_queue_; }
     iterator begin() const;
     iterator end() const;
     inline std::string to_string() const {
         std::string result;
-        for (const auto &ref : str_queue) {
+        for (const auto &ref : str_queue_) {
             result.append(ref.str, ref.len);
         }
         return result;

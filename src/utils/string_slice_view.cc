@@ -70,16 +70,16 @@ bool string_slice_view::iterator::operator==(const iterator &other) const {
 }
 void string_slice_view::push(const char *str, size_t len) {
     if (len == 0) return;
-    if (str_queue.size()) {
-        auto &b = str_queue.back();
+    if (str_queue_.size()) {
+        auto &b = str_queue_.back();
         if (b.str + b.len == str) {
             b.len += len;
             return;
         }
     }
-    str_queue.push_back({str, static_cast<unsigned int>(len)});
-    if (str_queue.size() == 1) {
-        str = str_queue.front().str;
+    str_queue_.push_back({str, static_cast<unsigned int>(len)});
+    if (str_queue_.size() == 1) {
+        str = str_queue_.front().str;
     }
 }
 void string_slice_view::push(std::string *str) {
@@ -90,14 +90,14 @@ void string_slice_view::push(iterator start, iterator end) {
     auto &q = *start.str_queue;
     while (start.offset < end.offset) {
         size_t len = q[start.offset].len - (start.str - q[start.offset].str);
-        str_queue.emplace_back(start.str, len);
+        str_queue_.emplace_back(start.str, len);
         start += len;
     }
     if (start == end) return;
-    str_queue.emplace_back(start.str, size_t(end.str - start.str));
+    str_queue_.emplace_back(start.str, size_t(end.str - start.str));
 }
 void string_slice_view::push(const string_slice_view &other) {
-    for (const auto &ref : other.str_queue) {
+    for (const auto &ref : other.str_queue_) {
         push(ref.str, ref.len);
     }
 }
@@ -105,21 +105,21 @@ void string_slice_view::insert(const iterator &pos, iterator start,
                                const iterator &end) {
     string_slice_view tmp;
     tmp.push(start, end);
-    auto it = str_queue.end();
-    if (pos.offset < str_queue.size()) {
-        it = str_queue.begin() + pos.offset;
-        tmp.str_queue.emplace_back(pos.str, it->len - (pos.str - it->str));
+    auto it = str_queue_.end();
+    if (pos.offset < str_queue_.size()) {
+        it = str_queue_.begin() + pos.offset;
+        tmp.str_queue_.emplace_back(pos.str, it->len - (pos.str - it->str));
         it->len = pos.str - it->str;
         ++it;
     }
-    str_queue.insert_range(it, tmp.str_queue);
+    str_queue_.insert_range(it, tmp.str_queue_);
 }
 void string_slice_view::insert(size_t pos, iterator start,
                                const iterator &end) {
-    insert(iterator(&str_queue) + pos, start, end);
+    insert(iterator(&str_queue_) + pos, start, end);
 }
 void string_slice_view::insert(size_t pos, const string_slice_view &other) {
-    insert(iterator(&str_queue) + pos, other.begin(), other.end());
+    insert(iterator(&str_queue_) + pos, other.begin(), other.end());
 }
 void string_slice_view::insert(const iterator &pos,
                                const string_slice_view &other) {
@@ -128,7 +128,7 @@ void string_slice_view::insert(const iterator &pos,
 string_slice_view::iterator string_slice_view::earse(iterator start,
                                                      iterator end) {
     if (start == end) return end;
-    auto it = str_queue.begin() + start.offset;
+    auto it = str_queue_.begin() + start.offset;
 
     if (auto l = end.offset - start.offset; l == 0) {
         if (start.str == it->str) {
@@ -139,22 +139,22 @@ string_slice_view::iterator string_slice_view::earse(iterator start,
             auto pre_s = it->str;
             it->len = it->str + it->len - end.str + 1;
             it->str = end.str;
-            it = str_queue.insert(it, {pre_s, pre_len});
+            it = str_queue_.insert(it, {pre_s, pre_len});
             ++end.offset;
         }
-    } else if (end.offset == str_queue.size()) {
+    } else if (end.offset == str_queue_.size()) {
         it->len = start.str - it->str;
-        str_queue.erase(it + 1, str_queue.end());
+        str_queue_.erase(it + 1, str_queue_.end());
         end = this->end();
     } else {
         it->len = start.str - it->str;
         if (it->len)
             ++it;
         else {
-            it = str_queue.erase(it);
+            it = str_queue_.erase(it);
             --end.offset;
         }
-        it = str_queue.erase(it, it + l - 1);
+        it = str_queue_.erase(it, it + l - 1);
         end.offset -= l - 1;
         it->len = it->len - (end.str - it->str);
         it->str = end.str;
@@ -167,11 +167,11 @@ void string_slice_view::replace(const iterator &start, const iterator &end,
     insert(earse(start, end), new_start, new_end);
 }
 string_slice_view::iterator string_slice_view::begin() const {
-    return iterator(&str_queue);
+    return iterator(&str_queue_);
 }
 string_slice_view::iterator string_slice_view::end() const {
-    iterator e{&str_queue};
-    e.offset = str_queue.size();
+    iterator e{&str_queue_};
+    e.offset = str_queue_.size();
     e.str = &iterator::__EOF;
     return e;
 }
@@ -182,9 +182,9 @@ std::ostream &operator<<(std::ostream &os, const string_slice_view &view) {
     return os;
 }
 void string_slice_view::pop_back() {
-    if (str_queue.back().len > 1) {
-        --str_queue.back().len;
+    if (str_queue_.back().len > 1) {
+        --str_queue_.back().len;
     } else {
-        str_queue.pop_back();
+        str_queue_.pop_back();
     }
 }
